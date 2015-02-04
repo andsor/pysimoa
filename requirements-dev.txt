@@ -1,0 +1,7 @@
+ipdb
+ipython[notebook,nbconvert]
+memory_profiler
+psutil
+pytest
+pytest-cov
+pytest-mock

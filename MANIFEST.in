@@ -1,0 +1,8 @@
+include versioneer.py
+include LICENSE
+include README
+include AUTHORS
+include *.txt
+include *.rst
+recursive-include simoa *.py *.c *.h *.pxd *.pyx
+recursive-include docs *.rst *.py
