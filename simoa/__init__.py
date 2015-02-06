@@ -29,4 +29,9 @@ from ._version import get_versions
 __version__ = get_versions()['version']
 del get_versions
 
-from .nskart import nskart
+from .nskart import (
+    compute_nskart_interval,
+    NSkartException,
+    NSkartTooFewValues,
+    NSkartInsufficientDataError,
+)
