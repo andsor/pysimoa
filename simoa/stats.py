@@ -42,7 +42,7 @@ def von_neumann_ratio_test(data, alpha, verbose=False):
     Notes
     -----
     Given a series :math:`x_i` of :math:`n` data points, the von-Neumann test
-    statistic is [1]_ [4]_
+    statistic is [1]_ [6]_
 
     .. math::
 
@@ -50,7 +50,7 @@ def von_neumann_ratio_test(data, alpha, verbose=False):
            \bar{x})^2
 
     Under the null hypothesis, the mean :math:`\bar{v} = 2` and the variance
-    :math:`\sigma^2_v = \frac{4 (n - 2)}{(n-1)(n+1)}` [5]_.
+    :math:`\sigma^2_v = \frac{4 (n - 2)}{(n-1)(n+1)}` [3]_.
 
 
 
@@ -67,24 +67,13 @@ def von_neumann_ratio_test(data, alpha, verbose=False):
        Vol. 12, No. 2 (Jun., 1941) , pp. 153-162
        http://www.jstor.org/stable/2235765
 
-    .. [3] A Comparison of the Power of the Von Neumann Ratio, Durbin-Watson
-       and Geary Tests
-       Hamid Habibagahi and John L. Pratschke
-       The Review of Economics and Statistics
-       Vol. 54, No. 2 (May, 1972) , pp. 179-185
-       http://www.jstor.org/stable/1926279
-
-    .. [4] Kleijnen, J. P., Van der Ven, R., & Sanders, B. (1982). Testing
-       independence of simulation subruns: a note on the power of the Von
-       Neumann test. European Journal of Operational Research, 9(1), 92-93.
-
-    .. [5] Moments of the Ratio of the Mean Square Successive Difference to the
+    .. [3] Moments of the Ratio of the Mean Square Successive Difference to the
        Mean Square Difference in Samples From a Normal Universe J. D. Williams
        The Annals of Mathematical Statistics
        Vol. 12, No. 2 (Jun., 1941) , pp. 239-241
        http://www.jstor.org/stable/2235775
 
-    .. [6] Madansky, Albert,
+    .. [4] Madansky, Albert,
        Testing for Independence of Observations,
        In: Prescriptions for Working Statisticians
        Springer New York
