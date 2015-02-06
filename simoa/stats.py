@@ -84,6 +84,12 @@ def von_neumann_ratio_test(data, alpha, verbose=False):
        Vol. 12, No. 2 (Jun., 1941) , pp. 239-241
        http://www.jstor.org/stable/2235775
 
+    .. [6] Madansky, Albert,
+       Testing for Independence of Observations,
+       In: Prescriptions for Working Statisticians
+       Springer New York
+       10.1007/978-1-4612-3794-5_4
+       http://dx.doi.org/10.1007/978-1-4612-3794-5_4
     """
 
     mean_square_successive_difference = np.power(np.ediff1d(data), 2).mean()
