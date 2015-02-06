@@ -4,6 +4,8 @@ pysimoa
 
 A Scientific Python package for Simulation Output Analysis
 
+* **Repository**: `github.com/andsor/pysimoa <http://github.com/andsor/pysimoa>`_
+* **Bibliography**: `www.citeulike.org/group/19419 <http://www.citeulike.org/group/19419>`_
 
 
 Requirements and Python 2/3 compatibility
@@ -161,3 +163,11 @@ Requirements Management
 
 Add `requirements`_ to the `requirements.txt <requirements.txt>`_ file which
 will be automatically used by ``setup.py``.
+
+
+Bibliography
+------------
+
+A `CiteULike group`_ manages the bibliography.
+
+.. _CiteULike group: http://www.citeulike.org/group/19419
