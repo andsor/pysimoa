@@ -99,6 +99,24 @@ def test_nskart_step_2_skewed():
     )
 
 
+def test_nskart_step3a_pass_randomness_test():
+    np.random.seed(1)
+    data = np.random.geometric(p=0.99, size=12800)
+    env = simoa.nskart._step_1(data)
+    env = simoa.nskart._step_2(env)
+    env = simoa.nskart._step_3a(env)
+    assert env[simoa.nskart.NSKART_NONSPACED_RANDOMNESS_TEST_KEY]
+
+
+def test_nskart_step3a_fail_randomness_test():
+    np.random.seed(7)
+    data = np.random.geometric(p=0.99, size=12800)
+    env = simoa.nskart._step_1(data)
+    env = simoa.nskart._step_2(env)
+    env = simoa.nskart._step_3a(env)
+    assert not env[simoa.nskart.NSKART_NONSPACED_RANDOMNESS_TEST_KEY]
+
+
 def test_nskart_invocation():
     return
     simoa.nskart(

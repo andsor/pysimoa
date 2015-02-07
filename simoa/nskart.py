@@ -38,6 +38,9 @@ NSKART_MAXIMUM_NUMBER_OF_BATCHES_IN_SPACER_SKEWED = 3
 NSKART_INITIAL_BATCH_NUMBER = 1280
 NSKART_RANDOMNESS_TEST_SIGNIFICANCE = 0.20
 NSKART_RANDOMNESS_TEST_SIGNIFICANCE_KEY = r'\alpha_{\text{ran}}'
+NSKART_NONSPACED_RANDOMNESS_TEST_KEY = (
+    'nonspaced batch means randomness test passed'
+)
 
 
 class NSkartException(BaseException):
@@ -208,71 +211,52 @@ def _step_2(env):
     return env
 
 
+def _step_3a(env):
+    """
+    Perform step 3a of the N-Skart algorithm
+
+    Parameters
+    ----------
+    env: dict
+        The persistent algorithm environment (parameters and variables)
+
+    Returns
+    -------
+    env: dict
+        The persistent algorithm environment (parameters and variables)
+
+    """
+
+    logger.info('N-Skart step 3a')
+    env[NSKART_NONSPACED_RANDOMNESS_TEST_KEY] = (
+        von_neumann_ratio_test(
+            data=env['Y_j'],
+            alpha=env[NSKART_RANDOMNESS_TEST_SIGNIFICANCE_KEY]
+        )
+    )
+    logger.debug(
+        'Randomness test for nonspaced batch means {}ed'.format(
+            'pass' if env[NSKART_NONSPACED_RANDOMNESS_TEST_KEY]
+            else 'fail'
+        )
+    )
+    logger.info('Finish step 3a')
+
+    return env
+
+
 def get_independent_data(xis, continue_insufficient_data=False, verbose=False):
 
     # STEP 1
 
     while True:
         # STEP 2
-        if verbose:
-            print('Step 2')
-
-        yjs_sample_skewness = scipy.stats.skew(
-            yjs[math.ceil(nonspaced_batch_number / 5):], bias=False
-        )
-
-        if verbose:
-            print(
-                (
-                    "Sample skewness of the last 80% of the current set of "
-                    "nonspaced batch means: {:.2f}"
-                ).format(
-                    yjs_sample_skewness
-                )
-            )
-
-        if abs(yjs_sample_skewness) > 0.5:
-            max_batch_number_in_spacer = 3
-
-            if verbose:
-                print(
-                    "Reset maximum number of batches per spacer to: {}".format(
-                        max_batch_number_in_spacer
-                    )
-                )
 
         # STEP 3
-        if verbose:
-            print('Step 3')
 
         # STEP 3a
-        if verbose:
-            print('Step 3a}')
-
-        if von_neumann_ratio_test(
-            yjs, randomness_test_significance_level, verbose=verbose
-        ):
-            # randomness test passed (failed to reject independence hypothesis)
-            if verbose:
-                print((
-                    "Randomness test passed "
-                    "(independence hypothesis failed-to-reject)"
-                ))
-            return (
-                True,
-                processed_sample_size,
-                batch_size,
-                nonspaced_batch_number,
-                batch_number,
-                batch_number_in_spacer,
-                test_counter
-            )
 
         # randomness test failed (independence hypothesis rejected)
-        if verbose:
-            print(
-                "Randomness test failed (independence hypothesis rejected)"
-            )
 
         while batch_number_in_spacer < max_batch_number_in_spacer:
             # STEP 3b/d
