@@ -26,7 +26,7 @@ import simoa
 import simoa.nskart
 
 
-def test_nskart_step1():
+def test_nskart_step_1_raises_if_too_few_values():
     with pytest.raises(simoa.NSkartTooFewValues):
         simoa.nskart._step_1(np.ones(1279))
 
@@ -69,16 +69,34 @@ def test_nskart_step_1_minimum_initial_batch_size():
 def test_nskart_step_1_initial_nonspaced_batch_means():
     data = np.ones(1280)
     env = simoa.nskart._step_1(data)
-    numpy.testing.assert_allclose(env['Y_i'], np.ones(1280))
-    assert env['Y_i'].size == env['k']
+    numpy.testing.assert_allclose(env['Y_j'], np.ones(1280))
+    assert env['Y_j'].size == env['k']
 
 
 def test_nskart_step_1_initial_nonspaced_batch_means_skewed_data():
     data = np.random.geometric(p=0.99, size=12800)
     env = simoa.nskart._step_1(data)
     assert env['m'] == 10
-    assert data[10:20].mean() == env['Y_i'][1]
-    assert env['Y_i'].size == env['k']
+    assert data[10:20].mean() == env['Y_j'][1]
+    assert env['Y_j'].size == env['k']
+
+
+def test_nskart_step_2_nonskewed():
+    data = np.random.rand(12800)
+    env = simoa.nskart._step_1(data)
+    env = simoa.nskart._step_2(env)
+    assert env['d^*'] == (
+        simoa.nskart.NSKART_MAXIMUM_NUMBER_OF_BATCHES_IN_SPACER
+    )
+
+
+def test_nskart_step_2_skewed():
+    data = np.random.geometric(p=0.99, size=12800)
+    env = simoa.nskart._step_1(data)
+    env = simoa.nskart._step_2(env)
+    assert env['d^*'] == (
+        simoa.nskart.NSKART_MAXIMUM_NUMBER_OF_BATCHES_IN_SPACER_SKEWED
+    )
 
 
 def test_nskart_invocation():

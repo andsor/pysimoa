@@ -18,6 +18,7 @@
 
 '''
 
+import logging
 import math
 import sys
 
@@ -25,11 +26,15 @@ import numpy as np
 import scipy.stats
 from simoa.stats import von_neumann_ratio_test
 
+logger = logging.getLogger(__name__)
+
+
 """ Minimum number of data points """
 NSKART_MIN_DATA_POINTS = 1280
 
 NSKART_INITIAL_NUMBER_OF_BATCHES_IN_SPACER = 0
 NSKART_MAXIMUM_NUMBER_OF_BATCHES_IN_SPACER = 10
+NSKART_MAXIMUM_NUMBER_OF_BATCHES_IN_SPACER_SKEWED = 3
 NSKART_INITIAL_BATCH_NUMBER = 1280
 NSKART_RANDOMNESS_TEST_SIGNIFICANCE = 0.20
 NSKART_RANDOMNESS_TEST_SIGNIFICANCE_KEY = r'\alpha_{\text{ran}}'
@@ -85,15 +90,27 @@ def compute_nskart_interval(
 def _step_1(data):
     """
     Perform step 1 of the N-Skart algorithm
+
+    Employs the `logging` module for output.
+
+    Parameters
+    ----------
+    data: array-like
+        Simulation output series
     """
+
+    logger.info('N-Skart step 1')
 
     # initialize persistent environment for the algorithm
     env = dict()
 
     env['X_i'] = data
     env['N'] = data.size
+    logger.debug('N = {}'.format(env['N']))
     if env['N'] < NSKART_MIN_DATA_POINTS:
-        raise NSkartTooFewValues
+        raise NSkartTooFewValues(
+            'Need {} values, got {}.'.format(NSKART_MIN_DATA_POINTS, env['N'])
+        )
 
     # From the given sample data set of size N, compute the sample skewness of
     # the last 80% of the observations.
@@ -102,11 +119,18 @@ def _step_1(data):
     sample_skewness = scipy.stats.skew(
         env['X_i'][math.floor(env['N'] / 5):], bias=False
     )
+    logger.debug(
+        'Sample skewness of the last 80% of the observations: {:.2f}'
+        .format(sample_skewness)
+    )
 
     # set initial batch size
     env['m'] = (
         1 if np.abs(sample_skewness) <= 4.0 else
         min(16, math.floor(env['N'] / 1280))
+    )
+    logger.debug(
+        'Initial batch size: m = {}'.format(env['m'])
     )
 
     # set current number of batches in a spacer
@@ -131,12 +155,55 @@ def _step_1(data):
     # overall sample of size N to compute k = 1280 nonspaced
     # (adjacent) batches of size m with an initial spacer consisting of
     # d ← 0 ignored batches preceding each “spaced” batch.
-    env['Y_i'] = (
+    env['Y_j'] = (
         env['X_i']
         [:env['m'] * env['k']]
         .reshape((env['k'], env['m']))
         .mean(axis=1)
     )
+
+    logger.debug('Post-step 1 environment: {}'.format(env))
+    logger.info('Finish step 1')
+
+    return env
+
+
+def _step_2(env):
+    """
+    Perform step 2 of the N-Skart algorithm
+
+    Parameters
+    ----------
+    env: dict
+        The persistent algorithm environment (parameters and variables)
+
+    Returns
+    -------
+    env: dict
+        The persistent algorithm environment (parameters and variables)
+
+    """
+
+    yjs_sample_skewness = scipy.stats.skew(
+        env['Y_j'][math.ceil(0.8 * env['k']):], bias=False
+    )
+    logger.debug((
+        'Sample skewness of the last 80% of the current set of nonspaced batch'
+        ' means: {:.2f}'
+    ).format(yjs_sample_skewness)
+    )
+
+    if abs(yjs_sample_skewness) > 0.5:
+        # reset the maximum number of batches per spacer
+        env['d^*'] = NSKART_MAXIMUM_NUMBER_OF_BATCHES_IN_SPACER_SKEWED
+        logger.debug(
+            'Reset the maximum number of batches per spacer to {}'.format(
+                env['d^*']
+            )
+        )
+
+    logger.debug('Post-step 2 environment: {}'.format(env))
+    logger.info('Finish step 2')
 
     return env
 
