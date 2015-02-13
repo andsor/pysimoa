@@ -4,7 +4,17 @@ pysimoa
 
 A Scientific Python package for Simulation Output Analysis
 
+.. image:: https://readthedocs.org/projects/pysimoa/badge/?version=latest
+   :target: https://readthedocs.org/projects/pysimoa/?badge=latest
+   :alt: Documentation Status
+
+.. image:: http://img.shields.io/pypi/l/pysimoa.svg
+   :target: http://pysimoa.readthedocs.org/en/latest/license.html
+   :alt: License
+
+* **Documentation**: `pysimoa.readthedocs.org <http://pysimoa.readthedocs.org>`_
 * **Repository**: `github.com/andsor/pysimoa <http://github.com/andsor/pysimoa>`_
+* **Read the Docs**: `readthedocs.org/projects/pysimoa <https://readthedocs.org/projects/pysimoa>`_
 * **Bibliography**: `www.citeulike.org/group/19419 <http://www.citeulike.org/group/19419>`_
 
 
@@ -115,6 +125,10 @@ Add further options separated from tox options by a double dash ``--``::
 
     $ tox -e docs -- --help
 
+`Read the Docs`_ hosts the project at
+https://readthedocs.org/projects/pysimoa. 
+
+.. _Read the Docs:  http://readthedocs.org/
 
 
 Add `requirements`_ for building the documentation to the
