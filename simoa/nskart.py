@@ -20,7 +20,6 @@
 
 import logging
 import math
-import sys
 
 import numpy as np
 import scipy.stats
@@ -41,6 +40,10 @@ NSKART_RANDOMNESS_TEST_SIGNIFICANCE_KEY = r'\alpha_{\text{ran}}'
 NSKART_NONSPACED_RANDOMNESS_TEST_KEY = (
     'nonspaced batch means randomness test passed'
 )
+NSKART_SPACED_RANDOMNESS_TEST_KEY = (
+    'spaced batch means randomness test passed'
+)
+NSKART_INSUFFICIENT_DATA_KEY = "insufficient data"
 
 
 class NSkartException(BaseException):
@@ -88,6 +91,15 @@ def compute_nskart_interval(
 
 """
     pass
+
+
+def _compute_nonspaced_batch_means(env):
+    return (
+        env['X_i']
+        [:env['m'] * env['k']]
+        .reshape((env['k'], env['m']))
+        .mean(axis=1)
+    )
 
 
 def _step_1(data):
@@ -153,17 +165,15 @@ def _step_1(data):
     # initialize randomness test counter
     env['b'] = 0
 
+    # initially processed sample size
+    env['n'] = env['k'] * env['m']
+
     # Having set an appropriate value for the initial batch size,
     # N-Skart uses the initial n = 1280m observations of the
     # overall sample of size N to compute k = 1280 nonspaced
     # (adjacent) batches of size m with an initial spacer consisting of
     # d ← 0 ignored batches preceding each “spaced” batch.
-    env['Y_j'] = (
-        env['X_i']
-        [:env['m'] * env['k']]
-        .reshape((env['k'], env['m']))
-        .mean(axis=1)
-    )
+    env['Y_j(m)'] = _compute_nonspaced_batch_means(env)
 
     logger.debug('Post-step 1 environment: {}'.format(env))
     logger.info('Finish step 1')
@@ -188,7 +198,7 @@ def _step_2(env):
     """
 
     yjs_sample_skewness = scipy.stats.skew(
-        env['Y_j'][math.ceil(0.8 * env['k']):], bias=False
+        env['Y_j(m)'][math.ceil(0.8 * env['k']):], bias=False
     )
     logger.debug((
         'Sample skewness of the last 80% of the current set of nonspaced batch'
@@ -224,13 +234,12 @@ def _step_3a(env):
     -------
     env: dict
         The persistent algorithm environment (parameters and variables)
-
     """
 
     logger.info('N-Skart step 3a')
     env[NSKART_NONSPACED_RANDOMNESS_TEST_KEY] = (
         von_neumann_ratio_test(
-            data=env['Y_j'],
+            data=env['Y_j(m)'],
             alpha=env[NSKART_RANDOMNESS_TEST_SIGNIFICANCE_KEY]
         )
     )
@@ -240,8 +249,152 @@ def _step_3a(env):
             else 'fail'
         )
     )
+    logger.debug('Post-step 3a environment: {}'.format(env))
     logger.info('Finish step 3a')
 
+    return env
+
+
+def _step_3bd(env):
+    """
+    Perform step 3b/d of the N-Skart algorithm
+
+    Parameters
+    ----------
+    env: dict
+        The persistent algorithm environment (parameters and variables)
+
+    Returns
+    -------
+    env: dict
+        The persistent algorithm environment (parameters and variables)
+    """
+
+    logger.info('N-Skart step 3b/d')
+
+    # add another ignored batch to each spacer
+    env['d'] += 1
+    logger.debug('Add another ignored batch to each spacer: d = {}'.format(
+        env['d']
+    ))
+
+    # number of spaced batches
+    env["k'"] = math.floor(env['n'] / (env['d'] + 1) / env['m'])
+    logger.debug("Number of spaced batches: k' = {}".format(env["k'"]))
+
+    # compute spaced batch means
+    env['Y_j(m,d)'] = env['Y_j(m)'][env['d']::env['d'] + 1]
+
+    logger.debug('Post-step 3b/d environment: {}'.format(env))
+    logger.info('Finish step 3b/d')
+    return env
+
+
+def _step_3c(env):
+    """
+    Perform step 3c of the N-Skart algorithm
+
+    Parameters
+    ----------
+    env: dict
+        The persistent algorithm environment (parameters and variables)
+
+    Returns
+    -------
+    env: dict
+        The persistent algorithm environment (parameters and variables)
+    """
+
+    logger.info('N-Skart step 3c')
+    env[NSKART_SPACED_RANDOMNESS_TEST_KEY] = (
+        von_neumann_ratio_test(
+            data=env['Y_j(m,d)'],
+            alpha=env[NSKART_RANDOMNESS_TEST_SIGNIFICANCE_KEY]
+        )
+    )
+    logger.debug(
+        'Randomness test for spaced batch means {}ed'.format(
+            'pass' if env[NSKART_SPACED_RANDOMNESS_TEST_KEY]
+            else 'fail'
+        )
+    )
+
+    logger.debug('Post-step 3c environment: {}'.format(env))
+    logger.info('Finish step 3c')
+    return env
+
+
+def _step_4(env, continue_insufficient_data=False):
+    """
+    Perform step 4 of the N-Skart algorithm
+
+    Parameters
+    ----------
+    env: dict
+        The persistent algorithm environment (parameters and variables)
+
+    Returns
+    -------
+    env: dict
+        The persistent algorithm environment (parameters and variables)
+    """
+
+    logger.info('N-Skart step 4')
+
+    # tentative new batch size
+    new_m = math.ceil(math.sqrt(2) * env['m'])
+
+    # tentative new total batch count
+    new_k = math.ceil(0.9 * env['k'])
+
+    # tentative new processed sample size
+    new_n = new_k * new_m
+
+    if new_n <= env['N']:
+        # update batch size
+        env['m'] = new_m
+        logger.debug('Update batch size: m = {}'.format(env['m']))
+
+        # update total batch count
+        env['k'] = new_k
+        logger.debug('Update total batch count: k = {}'.format(env['k']))
+
+        # update processed sample size
+        env['n'] = new_n
+        logger.debug('Update processed sample size: n = {}'.format(env['n']))
+
+        # reset batch counter
+        env['d'] = 0
+        env['d^*'] = 10
+
+        # increase test counter
+        env['b'] += 1
+
+        # recalculate non-spaced batch means
+        env['Y_j(m)'] = _compute_nonspaced_batch_means(env)
+
+    else:
+        # insufficient data: sample to processed larger than available data
+        logger.debug("Insufficient data.")
+        logger.debug("New batch size: m = {}".format(new_m))
+        logger.debug("New total batch count: k = {}".format(new_k))
+        logger.debug("New processed sample size: n = {}".format(new_n))
+        logger.debug("Available data points: N = {}".format(env['N']))
+
+        error_msg = ("N = {} data points available, need n = {}".format(
+            env['N'], new_n
+        ))
+
+        if continue_insufficient_data:
+            logger.error(error_msg)
+            logger.info("Insufficient data -- user request to continue")
+            env[NSKART_INSUFFICIENT_DATA_KEY] = True
+
+        else:
+            raise NSkartInsufficientDataError(error_msg)
+
+    logger.debug('Post-step 4 environment: {}'.format(env))
+    logger.info('Finish step 4')
     return env
 
 
@@ -260,125 +413,13 @@ def get_independent_data(xis, continue_insufficient_data=False, verbose=False):
 
         while batch_number_in_spacer < max_batch_number_in_spacer:
             # STEP 3b/d
-            if verbose:
-                print('Step 3b/d')
-
-            batch_number_in_spacer += 1
-            batch_number = math.floor(
-                processed_sample_size
-                / (batch_number_in_spacer + 1)
-                / batch_size
-            )
-            spaced_batch_means = nonspaced_batch_means[
-                batch_number_in_spacer::batch_number_in_spacer + 1
-            ]
-            assert(batch_number == spaced_batch_means.size)
-
-            if verbose:
-                print(
-                    (
-                        "Number of batches in spacer: d = {}\n"
-                        "batch number: k' = {}"
-                    ).format(
-                        batch_number_in_spacer,
-                        batch_number
-                    )
-                )
 
             # STEP 3c
-            if verbose:
-                print('Step 3c')
-
-            if von_neumann_ratio_test(
-                data=spaced_batch_means,
-                alpha=randomness_test_significance_level,
-                verbose=verbose
-            ):
-                # randomness test passed
-                # (failed to reject independence hypothesis)
-                if verbose:
-                    print((
-                        'Randomness test passed '
-                        '(independence hypothesis failed-to-reject)'
-                    ))
-                return (
-                    True,
-                    processed_sample_size,
-                    batch_size,
-                    nonspaced_batch_number,
-                    batch_number,
-                    batch_number_in_spacer,
-                    test_counter
-                )
-
-            # randomness test failed (independence hypothesis rejected)
-            if verbose:
-                print(
-                    'Randomness test failed (independence hypothesis rejected)'
-                )
 
             # Continue with Step 3b/d
+            pass
 
         # STEP 4
-        if verbose:
-            print('Step 4')
-
-        batch_size = math.ceil(math.sqrt(2) * batch_size)
-        nonspaced_batch_number = math.ceil(0.9 * nonspaced_batch_number)
-        processed_sample_size = nonspaced_batch_number * batch_size
-        if processed_sample_size > sample_size:
-            # insufficient data
-            if verbose:
-                print("Insufficient data.")
-
-            if continue_insufficient_data:
-                return (
-                    False,
-                    processed_sample_size,
-                    batch_size,
-                    nonspaced_batch_number,
-                    batch_number,
-                    batch_number_in_spacer,
-                    test_counter
-                )
-            else:
-                raise InsufficientDataError
-
-        batch_number_in_spacer = 0
-        max_batch_number_in_spacer = 10
-        test_counter += 1
-
-        if verbose:
-            print(
-                (
-                    "Batch size: m = {}\n"
-                    "current number of batches in spacer: d = {}\n"
-                    "maximum number of batches allowed in a spacer: {}\n"
-                    "batch number: k = {}\n"
-                    "processed sample size: n = {}\n"
-                    "number of times the batch count has been deflated "
-                    "in the randomness test: b = {}"
-                ).format(
-                    batch_size,
-                    batch_number_in_spacer,
-                    max_batch_number_in_spacer,
-                    nonspaced_batch_number,
-                    processed_sample_size,
-                    test_counter
-                )
-            )
-
-        nonspaced_batch_means = (
-            xis
-            [:batch_size * batch_number]
-            .reshape((batch_number, batch_size))
-            .mean(axis=1)
-        )
-        assert(nonspaced_batch_means.size == batch_number)
-        yjs = nonspaced_batch_means
-
-        if verbose:
-            sys.stdout.flush()
 
         # continue with Step 2
 
