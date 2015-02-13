@@ -20,6 +20,7 @@
 
 from __future__ import division
 
+from collections import namedtuple
 import logging
 import math
 
@@ -74,8 +75,14 @@ class NSkartTooFewValues(NSkartException, ValueError):
     pass
 
 
+NSkartReturnValue = namedtuple(
+    'NSkartReturnValue',
+    ['mean', 'ci', 'env']
+)
+
+
 def compute_nskart_interval(
-    data, confidence_level, continue_insufficient_data=True, verbose=False
+    data, confidence_level=ONE_SIGMA, continue_insufficient_data=False
 ):
     """
     Compute the confidence interval for the steady-state mean
@@ -106,7 +113,73 @@ def compute_nskart_interval(
        doi: 10.1109/TAC.2010.2052137
 
 """
-    pass
+
+    # STEPS 1 -- 4
+    env = _get_independent_data(data, continue_insufficient_data)
+
+    # STEP 5a
+    env = _step_5a(env)
+
+    # STEP 5b
+    env = _step_5b(env)
+
+    # STEP 6
+    env = _step_6(env)
+
+    # STEP 7
+    env = _step_7(env, confidence_level)
+
+    return NSkartReturnValue(
+        mean=env[NSKART_BATCHED_GRAND_MEAN_KEY],
+        ci=env['CI'],
+        env=env,
+    )
+
+
+def _get_independent_data(data, continue_insufficient_data=False):
+
+    # STEP 1
+    env = _step_1(data)
+
+    while True:
+        # STEP 2
+        env = _step_2(env)
+
+        # STEP 3
+
+        # STEP 3a
+        env = _step_3a(env)
+
+        if env[NSKART_NONSPACED_RANDOMNESS_TEST_KEY]:
+            # randomness test passed (failed-to-reject)
+            return env
+
+        # randomness test failed (independence hypothesis rejected)
+
+        while env["d"] < env["d^*"]:
+            # STEP 3b/d
+            env = _step_3bd(env)
+
+            # STEP 3c
+            env = _step_3c(env)
+
+            if env[NSKART_SPACED_RANDOMNESS_TEST_KEY]:
+                # randomness test passed (failed-to-reject)
+                return env
+
+            # Continue with Step 3b/d
+            continue
+
+        # STEP 4
+        env = _step_4(env, continue_insufficient_data)
+
+        if NSKART_INSUFFICIENT_DATA_KEY in env:
+            return env
+
+        # continue with Step 2
+        continue
+
+    raise RuntimeError
 
 
 def _compute_nonspaced_batch_means(env):
@@ -575,15 +648,21 @@ def _step_7(env, confidence_level=ONE_SIGMA, **kwargs):
     )
 
     # compute spaced batch means
+    # FIXME: BUG in paper
+    # Sum needs to start at: N - (k'' - j) (d' + 1) m - m + 1
+    # Until: N - (k'' - j) (d' + 1) m
+    mask = (
+        np.arange(env['N'] - env['w']) // env['m'] % (env["d'"] + 1) == 0
+    )[::-1]
+
     env["Y_j(m,d')"] = (
         env['X_i']
-        [:env["k''"] * (env["d'"] + 1) * env['m']]
+        [env['w']:]
+        [mask]
         .reshape(
-            ((env["d'"] + 1) * env["k''"], env['m'])
+            (env["k''"], env['m'])
         )
-        [::-(env["d'"] + 1), :]
         .mean(axis=1)
-        [::-1]
     )
 
     # compute grand mean
@@ -620,79 +699,3 @@ def _step_7(env, confidence_level=ONE_SIGMA, **kwargs):
     logger.debug('Post-step 7 environment: {}'.format(env))
     logger.info('Finish step 7')
     return env
-
-
-def get_independent_data(xis, continue_insufficient_data=False, verbose=False):
-
-    # STEP 1
-
-    while True:
-        # STEP 2
-
-        # STEP 3
-
-        # STEP 3a
-
-        # randomness test failed (independence hypothesis rejected)
-
-        while batch_number_in_spacer < max_batch_number_in_spacer:
-            # STEP 3b/d
-
-            # STEP 3c
-
-            # Continue with Step 3b/d
-            pass
-
-        # STEP 4
-
-        # continue with Step 2
-
-    raise RuntimeError
-
-
-def nskart(
-    data, confidence_level, continue_insufficient_data=True, verbose=False
-):
-
-    # STEP 5a
-    # STEP 5b
-
-    # STEP 6
-
-    # STEP 7
-    if verbose:
-        print('Step 7: Confidence interval')
-
-    if verbose:
-        print(
-            (
-                "Number of batches per spacer: d' = {}\n"
-                "Batch number: k'' = {}\n"
-                "Grand mean: {:.2f}\n"
-                "Spaced batches sample variance: {:.2f}\n"
-                "Spaced batches skewness: {:.2f}\n"
-                "beta = {:.3f}"
-            ).format(
-                ci_batch_number_in_spacer,
-                ci_batch_number,
-                ci_spaced_batch_mean,
-                ci_spaced_batch_var,
-                ci_spaced_batch_skew,
-                ci_beta,
-            )
-        )
-
-    if verbose:
-        print(
-            (
-                "Confidence level: {:.2f}%\n"
-                "Unadjusted critical values: {:.2f}, {:.2f}\n"
-                "Skewness-adjusted confidence interval: ({:.2f}, {:.2f})"
-            ).format(
-                confidence_level * 100,
-                critical_values[0], critical_values[1],
-                ci[0], ci[1]
-            )
-        )
-
-    return independence, grand_average, ci
