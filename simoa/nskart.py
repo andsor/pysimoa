@@ -454,6 +454,37 @@ def _step_5a(env, **kwargs):
     return env
 
 
+def _step_5b(env, **kwargs):
+    """
+    Perform step 5b of the N-Skart algorithm
+
+    Parameters
+    ----------
+    env: dict
+        The persistent algorithm environment (parameters and variables)
+
+    Returns
+    -------
+    env: dict
+        The persistent algorithm environment (parameters and variables)
+    """
+
+    logger.info('N-Skart step 5b')
+
+    # Recompute the truncated, nonspaced batch means so that there is no
+    # partial batch left at the end of the overall data set of size N
+    env['Y_j(m)'] = (
+        env['X_i']
+        [env['w']:]
+        .reshape((env["k'"], env['m']))
+        .mean(axis=1)
+    )
+
+    logger.debug('Post-step 5b environment: {}'.format(env))
+    logger.info('Finish step 5b')
+    return env
+
+
 def get_independent_data(xis, continue_insufficient_data=False, verbose=False):
 
     # STEP 1
@@ -490,35 +521,7 @@ def nskart(
 ):
 
     # STEP 5a
-
-    initial_number += reduced_sample_size - batch_number * batch_size
-
-    if verbose:
-        print(
-            (
-                "Number of initial observations to skip: w = {}\n"
-                "(inflated) batch number: k' = {}\n"
-                "(inflated) batch size: m = {}\n"
-                "inflation factor: f = {:.2f}"
-            ).format(
-                batch_number,
-                batch_size,
-                inflation_factor
-            )
-        )
-
     # STEP 5b
-    if verbose:
-        print('Step 5b')
-
-    nonspaced_batch_means = (
-        xis
-        [initial_number:]
-        .reshape((batch_number, batch_size))
-        .mean(axis=1)
-    )
-    assert(nonspaced_batch_means.size == batch_number)
-    yjs = nonspaced_batch_means
 
     # STEP 6
     if verbose:
