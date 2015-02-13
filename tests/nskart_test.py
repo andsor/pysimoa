@@ -112,6 +112,7 @@ def test_nskart_step3a_pass_randomness_test():
     env = simoa.nskart._step_2(env)
     env = simoa.nskart._step_3a(env)
     assert env[simoa.nskart.NSKART_NONSPACED_RANDOMNESS_TEST_KEY]
+    assert env["k'"] == env['k']
 
 
 def test_nskart_step3a_fail_randomness_test():
@@ -264,6 +265,23 @@ def test_nskart_step4_sufficient_data(nskart_step4_env_sufficient_data):
     assert env['d'] == 0
     assert env['d^*'] == 10
     assert env['Y_j(m)'].size == env['k']
+
+
+def test_nskart_step5a():
+    np.random.seed(7)
+    data = np.random.geometric(p=0.99, size=12800)
+    env = simoa.nskart._step_1(data)
+    env = simoa.nskart._step_2(env)
+    env = simoa.nskart._step_3a(env)  # fail randomness test
+    assert not env[simoa.nskart.NSKART_NONSPACED_RANDOMNESS_TEST_KEY]
+    env = simoa.nskart._step_3bd(env)
+    env = simoa.nskart._step_3c(env)
+    assert env[simoa.nskart.NSKART_SPACED_RANDOMNESS_TEST_KEY]
+    env = simoa.nskart._step_5a(env)
+
+    assert env["k'"] == 904
+    assert env['m'] == 14
+    assert env['w'] == 144
 
 
 def test_nskart_invocation():

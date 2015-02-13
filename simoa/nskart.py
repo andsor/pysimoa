@@ -243,6 +243,9 @@ def _step_3a(env):
             alpha=env[NSKART_RANDOMNESS_TEST_SIGNIFICANCE_KEY]
         )
     )
+    if env[NSKART_NONSPACED_RANDOMNESS_TEST_KEY]:
+        env["k'"] = env['k']
+
     logger.debug(
         'Randomness test for nonspaced batch means {}ed'.format(
             'pass' if env[NSKART_NONSPACED_RANDOMNESS_TEST_KEY]
@@ -398,6 +401,59 @@ def _step_4(env, continue_insufficient_data=False):
     return env
 
 
+def _step_5a(env, **kwargs):
+    """
+    Perform step 5a of the N-Skart algorithm
+
+    Parameters
+    ----------
+    env: dict
+        The persistent algorithm environment (parameters and variables)
+
+    Returns
+    -------
+    env: dict
+        The persistent algorithm environment (parameters and variables)
+    """
+
+    logger.info('N-Skart step 5a')
+
+    # Skip first w observations in the warm-up periods
+    env['w'] = env['d'] * env['m']
+
+    # Number of approximately steady-state observations is available to build a
+    # confidence interval
+    env["N'"] = env['N'] - env['w']
+
+    # Reinflate batch count to compensate for the total number of times the
+    # batch count was deflated in successive iterations of the randomness test.
+    env['k'] = min(
+        math.ceil(env["k"] * (1.0 / 0.9) ** env['b']),
+        env['k']
+    )
+
+    # compute a multiplier to use all available observations
+    env['f'] = math.sqrt(env["N'"] / env["k'"] / env['m'])
+
+    # update count of truncated, nonspaced batch means
+    env["k'"] = min(math.floor(env['f'] * env["k'"]), 1024)
+
+    # update batch size
+    env['m'] = math.floor(
+        env['f'] * env['m'] if env["k'"] < 1024
+        else
+        env["N'"] / 1024.0
+    )
+
+    # update length of warm-up period such that the initial w observations are
+    # the only unused items in the overall data set of size N
+    env['w'] += env["N'"] - env["k'"] * env['m']
+
+    logger.debug('Post-step 5a environment: {}'.format(env))
+    logger.info('Finish step 5a')
+    return env
+
+
 def get_independent_data(xis, continue_insufficient_data=False, verbose=False):
 
     # STEP 1
@@ -433,68 +489,7 @@ def nskart(
     data, confidence_level, continue_insufficient_data=True, verbose=False
 ):
 
-    xis = data
-
-    (
-        independence,
-        processed_sample_size,
-        batch_size,
-        nonspaced_batch_number,
-        batch_number,
-        batch_number_in_spacer,
-        test_counter
-    ) = get_independent_data(
-        xis,
-        continue_insufficient_data=continue_insufficient_data,
-        verbose=verbose
-    )
-
-    if verbose:
-        if independence:
-            print((
-                "Failed to reject independence hypothesis: "
-                "Passed randomness test."
-            ))
-
-        else:
-            print("Insufficient data, failed randomness tests.")
-
-        print(
-            (
-                "Processed sample size: n = {}\n"
-                "batch size: m = {}\n"
-                "(nonspaced) batch number: k = {}\n"
-                "spaced batch number: k' = {}\n"
-                "number of batches in spacer: d = {}\n"
-                "number of times batch count has been deflated: b = {}"
-            ).format(
-                processed_sample_size,
-                batch_size,
-                nonspaced_batch_number,
-                batch_number,
-                batch_number_in_spacer,
-                test_counter
-            )
-        )
-
     # STEP 5a
-    if verbose:
-        print('Step 5a')
-
-    initial_number = batch_number_in_spacer * batch_size
-    reduced_sample_size = xis.size - initial_number
-    batch_number = min(
-        math.ceil(batch_number * np.power(1. / 0.9, test_counter)),
-        nonspaced_batch_number
-    )
-    inflation_factor = math.sqrt(
-        reduced_sample_size / batch_number / batch_size
-    )
-    batch_number = min(math.floor(inflation_factor * batch_number), 1024)
-    if batch_number < 1024:
-        batch_size = math.floor(inflation_factor * batch_size)
-    else:
-        batch_size = math.floor(reduced_sample_size / 1024)
 
     initial_number += reduced_sample_size - batch_number * batch_size
 
