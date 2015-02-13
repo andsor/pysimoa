@@ -44,6 +44,9 @@ NSKART_SPACED_RANDOMNESS_TEST_KEY = (
     'spaced batch means randomness test passed'
 )
 NSKART_INSUFFICIENT_DATA_KEY = "insufficient data"
+NSKART_GRAND_AVERAGE_KEY = r"\bar{Y}(m,k')"
+NSKART_SAMPLE_VAR_KEY = r"S^2_{m,k'}"
+NSKART_SAMPLE_LAG1_CORR = r"\hat{\varphi}_{Y(m)}"
 
 
 class NSkartException(BaseException):
@@ -485,6 +488,75 @@ def _step_5b(env, **kwargs):
     return env
 
 
+def _step_6(env, **kwargs):
+    """
+    Perform step 6 of the N-Skart algorithm
+
+    Parameters
+    ----------
+    env: dict
+        The persistent algorithm environment (parameters and variables)
+
+    Returns
+    -------
+    env: dict
+        The persistent algorithm environment (parameters and variables)
+    """
+
+    logger.info('N-Skart step 6')
+
+    # compute the grand average of the current set of truncated, nonspaced
+    # batch means
+    env[NSKART_GRAND_AVERAGE_KEY] = env['Y_j(m)'].mean()
+
+    # compute the sample variance of the current set of truncated, nonspaced
+    # batch means
+    env[NSKART_SAMPLE_VAR_KEY] = env['Y_j(m)'].var(ddof=1)
+
+    # compute the sample estimator of the lag-one correlation of the truncated,
+    # nonspaced batch means
+    env[NSKART_SAMPLE_LAG1_CORR] = (
+        (
+            (env['Y_j(m)'][:-1] - env[NSKART_GRAND_AVERAGE_KEY])
+            * (env['Y_j(m)'][1:] - env[NSKART_GRAND_AVERAGE_KEY])
+        )
+        .sum()
+        / env[NSKART_SAMPLE_VAR_KEY]
+        / (env["k'"] - 1.0)
+    )
+
+    env['A'] = (
+        (1. + env[NSKART_SAMPLE_LAG1_CORR])
+        / (1. - env[NSKART_SAMPLE_LAG1_CORR])
+    )
+
+    logger.debug('Post-step 6 environment: {}'.format(env))
+    logger.info('Finish step 6')
+    return env
+
+
+def _step_7(env, **kwargs):
+    """
+    Perform step 7 of the N-Skart algorithm
+
+    Parameters
+    ----------
+    env: dict
+        The persistent algorithm environment (parameters and variables)
+
+    Returns
+    -------
+    env: dict
+        The persistent algorithm environment (parameters and variables)
+    """
+
+    logger.info('N-Skart step 7')
+
+    logger.debug('Post-step 7 environment: {}'.format(env))
+    logger.info('Finish step 7')
+    return env
+
+
 def get_independent_data(xis, continue_insufficient_data=False, verbose=False):
 
     # STEP 1
@@ -524,33 +596,6 @@ def nskart(
     # STEP 5b
 
     # STEP 6
-    if verbose:
-        print('Step 6')
-
-    grand_average = yjs.mean()
-    sample_var = yjs.var(ddof=1)
-    sample_lag1_corr = (
-        (yjs[:-1] - grand_average) * (yjs[1:] - grand_average)
-        .sum()
-        / sample_var
-        / (batch_number - 1)
-    )
-    corr_adjustment = (1. + sample_lag1_corr) / (1. - sample_lag1_corr)
-
-    if verbose:
-        print(
-            (
-                "Grand average: {:.2f}\n"
-                "Sample variance: {:.2f}\n"
-                "Sample estimator of the lag-one correlation: {:.2f}\n"
-                "Correlation adjustment: A = {:.2f}"
-            ).format(
-                grand_average,
-                sample_var,
-                sample_lag1_corr,
-                corr_adjustment
-            )
-        )
 
     # STEP 7
     if verbose:
