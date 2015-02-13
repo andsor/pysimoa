@@ -18,6 +18,8 @@
 
 '''
 
+from __future__ import division
+
 import logging
 import math
 
@@ -26,6 +28,14 @@ import scipy.stats
 from simoa.stats import von_neumann_ratio_test
 
 logger = logging.getLogger(__name__)
+
+
+# check python 3
+if not (3 / 2 == 1.5):
+    raise RuntimeError
+
+
+ONE_SIGMA = scipy.stats.norm().cdf(1) - scipy.stats.norm().cdf(-1)
 
 
 """ Minimum number of data points """
@@ -47,6 +57,9 @@ NSKART_INSUFFICIENT_DATA_KEY = "insufficient data"
 NSKART_GRAND_AVERAGE_KEY = r"\bar{Y}(m,k')"
 NSKART_SAMPLE_VAR_KEY = r"S^2_{m,k'}"
 NSKART_SAMPLE_LAG1_CORR = r"\hat{\varphi}_{Y(m)}"
+NSKART_BATCHED_GRAND_MEAN_KEY = r"\bar{Y}(m,k'',d')"
+NSKART_BATCHED_SAMPLE_VAR_KEY = r"S^2_{m,k'',d'}"
+NSKART_BATCHED_SKEW_KEY = r"\hat{\mathcal{B}}_{m,k''}"
 
 
 class NSkartException(BaseException):
@@ -535,7 +548,7 @@ def _step_6(env, **kwargs):
     return env
 
 
-def _step_7(env, **kwargs):
+def _step_7(env, confidence_level=ONE_SIGMA, **kwargs):
     """
     Perform step 7 of the N-Skart algorithm
 
@@ -551,6 +564,58 @@ def _step_7(env, **kwargs):
     """
 
     logger.info('N-Skart step 7')
+
+    # compute spacer number such that spacer size is the smallest multiple of m
+    # not less than the final size of the warm-up period
+    env["d'"] = math.ceil(env['w'] / env['m'])
+
+    # number of spaced batches
+    env["k''"] = 1 + math.floor(
+        (env["k'"] - 1) / (env["d'"] + 1)
+    )
+
+    # compute spaced batch means
+    env["Y_j(m,d')"] = (
+        env['X_i']
+        [:env["k''"] * (env["d'"] + 1) * env['m']]
+        .reshape(
+            ((env["d'"] + 1) * env["k''"], env['m'])
+        )
+        [::-(env["d'"] + 1), :]
+        .mean(axis=1)
+        [::-1]
+    )
+
+    # compute grand mean
+    env[NSKART_BATCHED_GRAND_MEAN_KEY] = env["Y_j(m,d')"].mean()
+
+    # compute sample variance
+    env[NSKART_BATCHED_SAMPLE_VAR_KEY] = env["Y_j(m,d')"].var(ddof=1)
+
+    # compute skewness
+    env[NSKART_BATCHED_SKEW_KEY] = scipy.stats.skew(
+        env["Y_j(m,d')"], bias=False
+    )
+
+    env[r'\beta'] = env[NSKART_BATCHED_SKEW_KEY] / 6 / math.sqrt(env["k''"])
+
+    def skewness_adjust(zeta):
+        beta = env[r'\beta']
+        return (
+            (np.power(1 + 6 * beta * (zeta - beta), 1 / 3) - 1) / 2 / beta
+        )
+
+    env['G(zeta)'] = skewness_adjust
+    env['L, R'] = np.asarray(
+        scipy.stats.t(df=env["k''"] - 1)
+        .interval(confidence_level)
+    )
+    env['CI'] = (
+        env[NSKART_BATCHED_GRAND_MEAN_KEY]
+        +
+        env['G(zeta)'](env['L, R'])
+        * math.sqrt(env['A'] * env[NSKART_BATCHED_SAMPLE_VAR_KEY] / env["k'"])
+    )
 
     logger.debug('Post-step 7 environment: {}'.format(env))
     logger.info('Finish step 7')
@@ -585,9 +650,6 @@ def get_independent_data(xis, continue_insufficient_data=False, verbose=False):
     raise RuntimeError
 
 
-one_sigma = scipy.stats.norm().cdf(1) - scipy.stats.norm().cdf(-1)
-
-
 def nskart(
     data, confidence_level, continue_insufficient_data=True, verbose=False
 ):
@@ -600,51 +662,6 @@ def nskart(
     # STEP 7
     if verbose:
         print('Step 7: Confidence interval')
-
-    ci_batch_number_in_spacer = math.ceil(initial_number / batch_size)
-    # subtract 1 because of exceeding the sample size in some configurations
-    # (bug in algorithm??)
-    ci_batch_number = (
-        1 + math.floor(
-            (batch_number - 1) / (ci_batch_number_in_spacer + 1)
-        ) - 1
-    )
-
-    ci_spaced_batch_means = (
-        xis
-        [:ci_batch_number * (ci_batch_number_in_spacer + 1) * batch_size]
-        .reshape(
-            (ci_batch_number * (ci_batch_number_in_spacer + 1), batch_size)
-        )
-        .mean(axis=1)
-        [::-(ci_batch_number_in_spacer + 1)]
-    )
-
-    ci_spaced_batch_mean = ci_spaced_batch_means.mean()
-    ci_spaced_batch_var = ci_spaced_batch_means.var(ddof=1)
-    ci_spaced_batch_skew = scipy.stats.skew(ci_spaced_batch_means, bias=False)
-    ci_beta = ci_spaced_batch_skew / 6. / math.sqrt(ci_batch_number)
-
-    skewness_adjust = (
-        lambda zeta: (
-            (
-                np.power(1. + 6. * ci_beta * (zeta - ci_beta), 1. / 3.) - 1.
-            )
-            / 2. / ci_beta
-        )
-    )
-    critical_values = (
-        np.asarray(
-            scipy.stats.t(df=ci_batch_number - 1)
-            .interval(confidence_level)
-        )
-    )
-    ci = (
-        grand_average
-        +
-        skewness_adjust(critical_values)
-        * math.sqrt(corr_adjustment * sample_var / batch_number)
-    )
 
     if verbose:
         print(

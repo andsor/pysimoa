@@ -19,6 +19,8 @@
 '''
 
 
+from __future__ import division
+
 import logging
 import math
 
@@ -317,6 +319,35 @@ def test_nskart_step6():
     assert env[simoa.nskart.NSKART_GRAND_AVERAGE_KEY] == (
         env['X_i'][env['w']:].mean()
     )
+
+
+def test_nskart_step7():
+    np.random.seed(7)
+    data = np.random.geometric(p=0.99, size=12800)
+    env = simoa.nskart._step_1(data)
+    env = simoa.nskart._step_2(env)
+    env = simoa.nskart._step_3a(env)  # fail randomness test
+    assert not env[simoa.nskart.NSKART_NONSPACED_RANDOMNESS_TEST_KEY]
+    env = simoa.nskart._step_3bd(env)
+    env = simoa.nskart._step_3c(env)
+    assert env[simoa.nskart.NSKART_SPACED_RANDOMNESS_TEST_KEY]
+    env = simoa.nskart._step_5a(env)
+    env = simoa.nskart._step_5b(env)
+    env = simoa.nskart._step_6(env)
+    env = simoa.nskart._step_7(env)
+    assert env["d'"] == 11
+    assert env["k''"] == 76
+    assert env["Y_j(m,d')"].size == env["k''"]
+    assert env["Y_j(m,d')"][0] == env['X_i'][11 * 14: 12 * 14].mean()
+    assert env["Y_j(m,d')"][1] == env['X_i'][23 * 14: 24 * 14].mean()
+    assert env["Y_j(m,d')"][-1] == env['X_i'][-14:].mean()
+    assert env[simoa.nskart.NSKART_BATCHED_GRAND_MEAN_KEY] == (
+        env['X_i'][:76 * 12 * 14].reshape((12 * 76, 14))[::-12, :].mean()
+    )
+    assert simoa.nskart.NSKART_BATCHED_SAMPLE_VAR_KEY in env
+    assert simoa.nskart.NSKART_BATCHED_SKEW_KEY in env
+    assert env['CI'][0] <= env[simoa.nskart.NSKART_BATCHED_GRAND_MEAN_KEY]
+    assert env[simoa.nskart.NSKART_BATCHED_GRAND_MEAN_KEY] <= env['CI'][1]
 
 
 def test_nskart_invocation():
