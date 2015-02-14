@@ -55,3 +55,4 @@ target/
 .devenv*
 .eggs
 .ipynb_*
+MANIFEST
