@@ -130,7 +130,7 @@ def compute_nskart_interval(
     env = _step_7(env, confidence_level)
 
     return NSkartReturnValue(
-        mean=env[NSKART_BATCHED_GRAND_MEAN_KEY],
+        mean=env[NSKART_GRAND_AVERAGE_KEY],
         ci=env['CI'],
         env=env,
     )
@@ -690,10 +690,10 @@ def _step_7(env, confidence_level=ONE_SIGMA, **kwargs):
         .interval(confidence_level)
     )
     env['CI'] = (
-        env[NSKART_BATCHED_GRAND_MEAN_KEY]
+        env[NSKART_GRAND_AVERAGE_KEY]
         +
         env['G(zeta)'](env['L, R'])
-        * math.sqrt(env['A'] * env[NSKART_BATCHED_SAMPLE_VAR_KEY] / env["k'"])
+        * math.sqrt(env['A'] * env[NSKART_SAMPLE_VAR_KEY] / env["k'"])
     )
 
     logger.debug('Post-step 7 environment: {}'.format(env))
