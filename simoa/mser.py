@@ -116,7 +116,7 @@ def compute_mser5_interval(
     env['objective'] = np.empty(env['k'] - 5)
     for d in range(env['k'] - 5):
         # compute objective function
-        env['objective'] = (
+        env['objective'][d] = (
             env['Z_j'][d:env['k']].var(ddof=0)
             / (env['k'] - d)
         )
@@ -138,6 +138,10 @@ def compute_mser5_interval(
     # compute truncated mean
     env[MSER5_TRUNCATED_MEAN_KEY] = env['Z_j'][env['d^*']:].mean()
 
+    # compute truncated sample variance
+    env[MSER5_TRUNCATED_VARIANCE_KEY] = env['Z_j'][env['d^*']:].var(ddof=0)
+
+    """
     env['k^*'] = 20
     env['m^*'] = int(math.floor((env['k'] - env['d^*']) / env['k^*']))
 
@@ -157,17 +161,17 @@ def compute_mser5_interval(
     env[MSER5_NEW_BATCH_MEANS_VARIANCE_KEY] = (
         env[MSER5_NEW_BATCH_MEANS_KEY].var(ddof=1)
     )
+    """
 
     critical_values = np.asarray(
-        scipy.stats.t(df=env['k^*'] - 1)
-        .interval(confidence_level)
+        scipy.stats.norm.interval(confidence_level)
     )
 
     env['CI'] = (
         env[MSER5_TRUNCATED_MEAN_KEY]
         + critical_values
-        * env[MSER5_NEW_BATCH_MEANS_VARIANCE_KEY]
-        / math.sqrt(env['k^*'])
+        * env[MSER5_TRUNCATED_VARIANCE_KEY]
+        / math.sqrt(env['k'] - env['d^*'])
     )
 
     return MSERReturnValue(
