@@ -12,6 +12,7 @@ A Scientific Python package for Simulation Output Analysis
    :target: http://pysimoa.readthedocs.org/en/latest/license.html
    :alt: License
 
+* **PyPI**: `pypi.python.org/pypi/simoa <http://pypi.python.org/pypi/simoa>`_
 * **Documentation**: `pysimoa.readthedocs.org <http://pysimoa.readthedocs.org>`_
 * **Repository**: `github.com/andsor/pysimoa <http://github.com/andsor/pysimoa>`_
 * **Read the Docs**: `readthedocs.org/projects/pysimoa <https://readthedocs.org/projects/pysimoa>`_
