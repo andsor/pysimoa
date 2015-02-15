@@ -1,6 +1,10 @@
+ggcq
 ipdb
 ipython[notebook,nbconvert]
+matplotlib
 memory_profiler
+numexpr
+pandas
 psutil
 pytest
 pytest-capturelog
