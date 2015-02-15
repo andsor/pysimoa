@@ -25,7 +25,7 @@ import simoa.mser
 
 def test_mser5():
     data = np.random.rand(1000)
-    ret = simoa.mser.compute_mser5_interval(data)
+    ret = simoa.compute_mser5_interval(data)
     env = ret.env
     assert env['Z_j'].size == 200
     assert env['Z_j'][1] == data[5:10].mean()
