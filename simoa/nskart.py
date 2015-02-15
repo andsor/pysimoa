@@ -20,9 +20,9 @@
 
 from __future__ import division
 
-from collections import namedtuple
 import logging
 import math
+from collections import namedtuple
 
 import numpy as np
 import scipy.stats
