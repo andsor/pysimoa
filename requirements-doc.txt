@@ -1,4 +1,5 @@
 Sphinx
+matplotlib
 sphinx-rtd-theme
 sphinxcontrib-bibtex
 sphinxcontrib-napoleon
