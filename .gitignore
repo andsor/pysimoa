@@ -40,3 +40,4 @@ docs/_build/*
 cover/*
 MANIFEST
 .doit.db
+.hypothesis
