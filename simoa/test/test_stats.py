@@ -1,26 +1,65 @@
 # -*- coding: utf-8 -*-
 
-'''
 
-   Copyright 2015 The pysimoa Developers
+import functools
+import itertools
 
-   Licensed under the Apache License, Version 2.0 (the "License");
-   you may not use this file except in compliance with the License.
-   You may obtain a copy of the License at
-
-       http://www.apache.org/licenses/LICENSE-2.0
-
-   Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an "AS IS" BASIS,
-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under the License.
-
-'''
-
-
+import hypothesis
+import hypothesis.strategies as st
 import numpy as np
 import simoa.stats
+
+
+@hypothesis.given(
+    st.lists(
+        elements=st.one_of(
+            st.integers(min_value=10, max_value=1000000),
+            st.floats(min_value=1e1, max_value=1e6),
+        ),
+        min_size=2,
+    ),
+)
+def test_online_variance_incremental(data):
+    result = functools.reduce(
+        simoa.stats.online_variance,
+        ((1, data_point, 0.0) for data_point in data),
+    )
+    assert result[0] == len(data)
+    np.testing.assert_allclose(result[1], np.mean(data))
+    np.testing.assert_allclose(
+        result[2],
+        np.sum(np.square(np.subtract(data, np.mean(data)))),
+    )
+
+
+@hypothesis.given(
+    st.lists(
+        elements=st.lists(
+            elements=st.one_of(
+                st.integers(min_value=10, max_value=1000000),
+                st.floats(min_value=1e1, max_value=1e6),
+            ),
+            min_size=2,
+        ),
+        min_size=2,
+    ),
+)
+def test_online_variance_several(data):
+    reduced = [
+        functools.reduce(
+            simoa.stats.online_variance,
+            ((1, data_point, 0.0) for data_point in samples),
+        )
+        for samples in data
+    ]
+    result = functools.reduce(simoa.stats.online_variance, reduced)
+    alldata = list(itertools.chain(*data))
+    assert result[0] == len(alldata)
+    np.testing.assert_allclose(result[1], np.mean(alldata))
+    np.testing.assert_allclose(
+        result[2],
+        np.sum(np.square(np.subtract(alldata, np.mean(alldata)))),
+    )
 
 
 def test_von_neumann_ratio_test_invocation():
