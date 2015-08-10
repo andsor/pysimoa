@@ -14,7 +14,7 @@
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '../../',
-        VERSION:     '0.4.1.dev0+ng83863ee.d20150810',
+        VERSION:     '0.4.1.dev6+ngfedb917',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
@@ -41,24 +41,6 @@
             
   <h1>Source code for simoa.mser</h1><div class="highlight"><pre>
 <span class="c"># -*- coding: utf-8 -*-</span>
-
-<span class="sd">&#39;&#39;&#39;</span>
-
-<span class="sd">   Copyright 2015 The pysimoa Developers</span>
-
-<span class="sd">   Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);</span>
-<span class="sd">   you may not use this file except in compliance with the License.</span>
-<span class="sd">   You may obtain a copy of the License at</span>
-
-<span class="sd">       http://www.apache.org/licenses/LICENSE-2.0</span>
-
-<span class="sd">   Unless required by applicable law or agreed to in writing, software</span>
-<span class="sd">   distributed under the License is distributed on an &quot;AS IS&quot; BASIS,</span>
-<span class="sd">   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</span>
-<span class="sd">   See the License for the specific language governing permissions and</span>
-<span class="sd">   limitations under the License.</span>
-
-<span class="sd">&#39;&#39;&#39;</span>
 
 <span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">division</span>
 
@@ -159,8 +141,7 @@
     <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">env</span><span class="p">[</span><span class="s">&#39;k&#39;</span><span class="p">]</span> <span class="o">-</span> <span class="mi">5</span><span class="p">):</span>
         <span class="c"># compute objective function</span>
         <span class="n">env</span><span class="p">[</span><span class="s">&#39;objective&#39;</span><span class="p">][</span><span class="n">d</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
-            <span class="n">env</span><span class="p">[</span><span class="s">&#39;Z_j&#39;</span><span class="p">][</span><span class="n">d</span><span class="p">:</span><span class="n">env</span><span class="p">[</span><span class="s">&#39;k&#39;</span><span class="p">]]</span><span class="o">.</span><span class="n">var</span><span class="p">(</span><span class="n">ddof</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
-            <span class="o">/</span> <span class="p">(</span><span class="n">env</span><span class="p">[</span><span class="s">&#39;k&#39;</span><span class="p">]</span> <span class="o">-</span> <span class="n">d</span><span class="p">)</span>
+            <span class="n">env</span><span class="p">[</span><span class="s">&#39;Z_j&#39;</span><span class="p">][</span><span class="n">d</span><span class="p">:</span><span class="n">env</span><span class="p">[</span><span class="s">&#39;k&#39;</span><span class="p">]]</span><span class="o">.</span><span class="n">var</span><span class="p">(</span><span class="n">ddof</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">env</span><span class="p">[</span><span class="s">&#39;k&#39;</span><span class="p">]</span> <span class="o">-</span> <span class="n">d</span><span class="p">)</span>
         <span class="p">)</span>
 
     <span class="c"># compute truncation point</span>
@@ -210,10 +191,10 @@
     <span class="p">)</span>
 
     <span class="n">env</span><span class="p">[</span><span class="s">&#39;CI&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
-        <span class="n">env</span><span class="p">[</span><span class="n">MSER5_TRUNCATED_MEAN_KEY</span><span class="p">]</span>
-        <span class="o">+</span> <span class="n">critical_values</span>
-        <span class="o">*</span> <span class="n">env</span><span class="p">[</span><span class="n">MSER5_TRUNCATED_VARIANCE_KEY</span><span class="p">]</span>
-        <span class="o">/</span> <span class="n">math</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">env</span><span class="p">[</span><span class="s">&#39;k&#39;</span><span class="p">]</span> <span class="o">-</span> <span class="n">env</span><span class="p">[</span><span class="s">&#39;d^*&#39;</span><span class="p">])</span>
+        <span class="n">env</span><span class="p">[</span><span class="n">MSER5_TRUNCATED_MEAN_KEY</span><span class="p">]</span> <span class="o">+</span>
+        <span class="n">critical_values</span> <span class="o">*</span>
+        <span class="n">env</span><span class="p">[</span><span class="n">MSER5_TRUNCATED_VARIANCE_KEY</span><span class="p">]</span> <span class="o">/</span>
+        <span class="n">math</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">env</span><span class="p">[</span><span class="s">&#39;k&#39;</span><span class="p">]</span> <span class="o">-</span> <span class="n">env</span><span class="p">[</span><span class="s">&#39;d^*&#39;</span><span class="p">])</span>
     <span class="p">)</span>
 
     <span class="k">return</span> <span class="n">MSERReturnValue</span><span class="p">(</span>
