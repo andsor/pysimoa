@@ -1,23 +1,5 @@
 # -*- coding: utf-8 -*-
 
-'''
-
-   Copyright 2015 The pysimoa Developers
-
-   Licensed under the Apache License, Version 2.0 (the "License");
-   you may not use this file except in compliance with the License.
-   You may obtain a copy of the License at
-
-       http://www.apache.org/licenses/LICENSE-2.0
-
-   Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an "AS IS" BASIS,
-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under the License.
-
-'''
-
 from __future__ import division
 
 import logging
@@ -603,17 +585,17 @@ def _step_6(env, **kwargs):
     # nonspaced batch means
     env[NSKART_SAMPLE_LAG1_CORR] = (
         (
-            (env['Y_j(m)'][:-1] - env[NSKART_GRAND_AVERAGE_KEY])
-            * (env['Y_j(m)'][1:] - env[NSKART_GRAND_AVERAGE_KEY])
+            (env['Y_j(m)'][:-1] - env[NSKART_GRAND_AVERAGE_KEY]) *
+            (env['Y_j(m)'][1:] - env[NSKART_GRAND_AVERAGE_KEY])
         )
-        .sum()
-        / env[NSKART_SAMPLE_VAR_KEY]
-        / (env["k'"] - 1.0)
+        .sum() /
+        env[NSKART_SAMPLE_VAR_KEY] /
+        (env["k'"] - 1.0)
     )
 
     env['A'] = (
-        (1. + env[NSKART_SAMPLE_LAG1_CORR])
-        / (1. - env[NSKART_SAMPLE_LAG1_CORR])
+        (1. + env[NSKART_SAMPLE_LAG1_CORR]) /
+        (1. - env[NSKART_SAMPLE_LAG1_CORR])
     )
 
     logger.debug('Post-step 6 environment: {}'.format(env))
@@ -690,10 +672,9 @@ def _step_7(env, confidence_level=ONE_SIGMA, **kwargs):
         .interval(confidence_level)
     )
     env['CI'] = (
-        env[NSKART_GRAND_AVERAGE_KEY]
-        +
-        env['G(zeta)'](env['L, R'])
-        * math.sqrt(env['A'] * env[NSKART_SAMPLE_VAR_KEY] / env["k'"])
+        env[NSKART_GRAND_AVERAGE_KEY] +
+        env['G(zeta)'](env['L, R']) *
+        math.sqrt(env['A'] * env[NSKART_SAMPLE_VAR_KEY] / env["k'"])
     )
 
     logger.debug('Post-step 7 environment: {}'.format(env))

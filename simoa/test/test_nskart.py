@@ -1,24 +1,5 @@
 # -*- coding: utf-8 -*-
 
-'''
-
-   Copyright 2015 The pysimoa Developers
-
-   Licensed under the Apache License, Version 2.0 (the "License");
-   you may not use this file except in compliance with the License.
-   You may obtain a copy of the License at
-
-       http://www.apache.org/licenses/LICENSE-2.0
-
-   Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an "AS IS" BASIS,
-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under the License.
-
-'''
-
-
 from __future__ import division
 
 import logging
@@ -209,8 +190,8 @@ def nskart_step4_env_insufficient_data():
     env = simoa.nskart._step_3bd(env)  # d == 3
     env = simoa.nskart._step_3c(env)  # fail randomness test
     assert (
-        not env[simoa.nskart.NSKART_NONSPACED_RANDOMNESS_TEST_KEY]
-        and not env[simoa.nskart.NSKART_SPACED_RANDOMNESS_TEST_KEY]
+        not env[simoa.nskart.NSKART_NONSPACED_RANDOMNESS_TEST_KEY] and
+        not env[simoa.nskart.NSKART_SPACED_RANDOMNESS_TEST_KEY]
     )
     return env
 
@@ -253,8 +234,8 @@ def nskart_step4_env_sufficient_data():
     env = simoa.nskart._step_3bd(env)  # d == 3
     env = simoa.nskart._step_3c(env)  # fail randomness test
     assert (
-        not env[simoa.nskart.NSKART_NONSPACED_RANDOMNESS_TEST_KEY]
-        and not env[simoa.nskart.NSKART_SPACED_RANDOMNESS_TEST_KEY]
+        not env[simoa.nskart.NSKART_NONSPACED_RANDOMNESS_TEST_KEY] and
+        not env[simoa.nskart.NSKART_SPACED_RANDOMNESS_TEST_KEY]
     )
     return env
 
