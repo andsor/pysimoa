@@ -19,8 +19,74 @@
 '''
 
 
+# Python 2/3 compatibility
+from __future__ import division
+
 import numpy as np
 import scipy.stats
+
+
+def online_variance(row_a, row_b):
+    r"""
+    Combine the sample mean and variance of two samples
+
+    This is a function ready for use for `reduce`.
+    It is commutative and associative.
+
+    Parameters
+    ----------
+    row_a, row_b
+        Tuple-like variables with first item being the number of data points
+        in that sample, the second item being the mean of that sample,
+        and the third item being the sum of squared differences of the data
+        points to the mean in that sample.
+
+    Returns
+    -------
+    ret : tuple
+        ``(n_ab, mean_ab, m2_ab)``
+
+    n_ab
+        number of data points in the combined sample
+
+    mean_ab
+        mean of the combined sample
+
+    m2_ab
+        sum of squared difference to the mean.
+        To get the variance, divide by ``n_ab - 1``.
+
+
+    Notes
+    -----
+
+    .. math::
+
+        n_{ab} = n_a + n_b
+        \bar{x}_ab = \frac{n_a \bar{x}_a + n_b \bar{x}_b}{n_{ab}}
+        S_{ab} = S_a + S_b + \frac{n_a n_b}{n_{ab}} (\bar{x}_b - \bar{x}_a)^2
+
+    References
+    ----------
+    https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#Parallel_algorithm
+
+    Chan, Tony F., Gene H. Golub, and Randall J. LeVeque. "Algorithms for
+    computing the sample variance: Analysis and recommendations." The American
+    Statistician 37.3 (1983): 242-247.
+    http://www.jstor.org/stable/2683386
+
+    Chan, Tony F., Gene H. Golub, and Randall J. LeVeque. "Updating formulae
+    and a pairwise algorithm for computing sample variances." COMPSTAT 1982 5th
+    Symposium held at Toulouse 1982. Physica-Verlag HD, 1982.
+    http://i.stanford.edu/pub/cstr/reports/cs/tr/79/773/CS-TR-79-773.pdf
+    """
+
+    n_a, mean_a, m2_a = row_a
+    n_b, mean_b, m2_b = row_b
+    n_ab = n_a + n_b
+    mean_ab = (mean_a * n_a + mean_b * n_b) / (n_a + n_b)
+    m2_ab = m2_a + m2_b + np.square(mean_b - mean_a) * n_a * n_b / n_ab
+    return n_ab, mean_ab, m2_ab
 
 
 def von_neumann_ratio_test(data, alpha, verbose=False):
