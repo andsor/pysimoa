@@ -2,7 +2,7 @@ Developer Guide
 ===============
 
 * **Repository**: `github.com/andsor/pytemper <http://github.com/andsor/pytemper>`_
-* **Bibliography**: `www.citeulike.org/group/19115 <http://www.citeulike.org/group/19115>`_
+* **Bibliography**: `www.citeulike.org/group/19419 <http://www.citeulike.org/group/19419>`_
 
 Development environment
 -----------------------
