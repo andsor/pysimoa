@@ -1,0 +1,38 @@
+simoa package
+=============
+
+Submodules
+----------
+
+simoa.mser module
+-----------------
+
+.. automodule:: simoa.mser
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+simoa.nskart module
+-------------------
+
+.. automodule:: simoa.nskart
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+simoa.stats module
+------------------
+
+.. automodule:: simoa.stats
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+
+Module contents
+---------------
+
+.. automodule:: simoa
+    :members:
+    :undoc-members:
+    :show-inheritance:

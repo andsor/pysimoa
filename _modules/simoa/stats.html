@@ -1,0 +1,293 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>simoa.stats &mdash; pysimoa documentation</title>
+    
+    <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '0.4.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="author" title="About these documents" href="../../about.html" />
+    <link rel="top" title="pysimoa documentation" href="../../index.html" />
+    <link rel="up" title="Module code" href="../index.html" />
+   
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9">
+
+  </head>
+  <body role="document">  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for simoa.stats</h1><div class="highlight"><pre>
+<span class="c"># -*- coding: utf-8 -*-</span>
+
+<span class="sd">&#39;&#39;&#39;</span>
+
+<span class="sd">   Copyright 2015 The pysimoa Developers</span>
+
+<span class="sd">   Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);</span>
+<span class="sd">   you may not use this file except in compliance with the License.</span>
+<span class="sd">   You may obtain a copy of the License at</span>
+
+<span class="sd">       http://www.apache.org/licenses/LICENSE-2.0</span>
+
+<span class="sd">   Unless required by applicable law or agreed to in writing, software</span>
+<span class="sd">   distributed under the License is distributed on an &quot;AS IS&quot; BASIS,</span>
+<span class="sd">   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</span>
+<span class="sd">   See the License for the specific language governing permissions and</span>
+<span class="sd">   limitations under the License.</span>
+
+<span class="sd">&#39;&#39;&#39;</span>
+
+
+<span class="c"># Python 2/3 compatibility</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">division</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">scipy.stats</span>
+
+
+<div class="viewcode-block" id="online_variance"><a class="viewcode-back" href="../../_rst/simoa.html#simoa.stats.online_variance">[docs]</a><span class="k">def</span> <span class="nf">online_variance</span><span class="p">(</span><span class="n">row_a</span><span class="p">,</span> <span class="n">row_b</span><span class="p">):</span>
+    <span class="sd">r&quot;&quot;&quot;</span>
+<span class="sd">    Combine the sample mean and variance of two samples</span>
+
+<span class="sd">    This is a function ready for use for `reduce`.</span>
+<span class="sd">    It is commutative and associative.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    row_a, row_b</span>
+<span class="sd">        Tuple-like variables with first item being the number of data points</span>
+<span class="sd">        in that sample, the second item being the mean of that sample,</span>
+<span class="sd">        and the third item being the sum of squared differences of the data</span>
+<span class="sd">        points to the mean in that sample.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    ret : tuple</span>
+<span class="sd">        ``(n_ab, mean_ab, m2_ab)``</span>
+
+<span class="sd">    n_ab</span>
+<span class="sd">        number of data points in the combined sample</span>
+
+<span class="sd">    mean_ab</span>
+<span class="sd">        mean of the combined sample</span>
+
+<span class="sd">    m2_ab</span>
+<span class="sd">        sum of squared difference to the mean.</span>
+<span class="sd">        To get the variance, divide by ``n_ab - 1``.</span>
+
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+
+<span class="sd">    .. math::</span>
+
+<span class="sd">        n_{ab} = n_a + n_b</span>
+<span class="sd">        \bar{x}_ab = \frac{n_a \bar{x}_a + n_b \bar{x}_b}{n_{ab}}</span>
+<span class="sd">        S_{ab} = S_a + S_b + \frac{n_a n_b}{n_{ab}} (\bar{x}_b - \bar{x}_a)^2</span>
+
+<span class="sd">    References</span>
+<span class="sd">    ----------</span>
+<span class="sd">    https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#Parallel_algorithm</span>
+
+<span class="sd">    Chan, Tony F., Gene H. Golub, and Randall J. LeVeque. &quot;Algorithms for</span>
+<span class="sd">    computing the sample variance: Analysis and recommendations.&quot; The American</span>
+<span class="sd">    Statistician 37.3 (1983): 242-247.</span>
+<span class="sd">    http://www.jstor.org/stable/2683386</span>
+
+<span class="sd">    Chan, Tony F., Gene H. Golub, and Randall J. LeVeque. &quot;Updating formulae</span>
+<span class="sd">    and a pairwise algorithm for computing sample variances.&quot; COMPSTAT 1982 5th</span>
+<span class="sd">    Symposium held at Toulouse 1982. Physica-Verlag HD, 1982.</span>
+<span class="sd">    http://i.stanford.edu/pub/cstr/reports/cs/tr/79/773/CS-TR-79-773.pdf</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">n_a</span><span class="p">,</span> <span class="n">mean_a</span><span class="p">,</span> <span class="n">m2_a</span> <span class="o">=</span> <span class="n">row_a</span>
+    <span class="n">n_b</span><span class="p">,</span> <span class="n">mean_b</span><span class="p">,</span> <span class="n">m2_b</span> <span class="o">=</span> <span class="n">row_b</span>
+    <span class="n">n_ab</span> <span class="o">=</span> <span class="n">n_a</span> <span class="o">+</span> <span class="n">n_b</span>
+    <span class="n">mean_ab</span> <span class="o">=</span> <span class="p">(</span><span class="n">mean_a</span> <span class="o">*</span> <span class="n">n_a</span> <span class="o">+</span> <span class="n">mean_b</span> <span class="o">*</span> <span class="n">n_b</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">n_a</span> <span class="o">+</span> <span class="n">n_b</span><span class="p">)</span>
+    <span class="n">m2_ab</span> <span class="o">=</span> <span class="n">m2_a</span> <span class="o">+</span> <span class="n">m2_b</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">mean_b</span> <span class="o">-</span> <span class="n">mean_a</span><span class="p">)</span> <span class="o">*</span> <span class="n">n_a</span> <span class="o">*</span> <span class="n">n_b</span> <span class="o">/</span> <span class="n">n_ab</span>
+    <span class="k">return</span> <span class="n">n_ab</span><span class="p">,</span> <span class="n">mean_ab</span><span class="p">,</span> <span class="n">m2_ab</span>
+
+</div>
+<div class="viewcode-block" id="von_neumann_ratio_test"><a class="viewcode-back" href="../../_rst/simoa.html#simoa.stats.von_neumann_ratio_test">[docs]</a><span class="k">def</span> <span class="nf">von_neumann_ratio_test</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">alpha</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Test a series of observations for independence (lack of autocorrelation)</span>
+
+<span class="sd">    The von-Neumann ratio test is a statistical test designed for testing the</span>
+<span class="sd">    independence of subsequent observations.</span>
+<span class="sd">    The null hypothesis is that the data are independent and normally</span>
+<span class="sd">    distributed.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    alpha: float</span>
+<span class="sd">        Significance level.</span>
+<span class="sd">        This is the probability threshold below which the null hypothesis will</span>
+<span class="sd">        be rejected.</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    Given a series :math:`x_i` of :math:`n` data points, the von-Neumann test</span>
+<span class="sd">    statistic is [1]_ [6]_</span>
+
+<span class="sd">    .. math::</span>
+
+<span class="sd">       v = \frac{\sum_{i=1}^{n-1} (x_{i+1} - x_i)^2}{\sum_{i=1}^n (x_i -</span>
+<span class="sd">           \bar{x})^2</span>
+
+<span class="sd">    Under the null hypothesis, the mean :math:`\bar{v} = 2` and the variance</span>
+<span class="sd">    :math:`\sigma^2_v = \frac{4 (n - 2)}{(n-1)(n+1)}` [3]_.</span>
+
+
+
+<span class="sd">    References</span>
+<span class="sd">    ----------</span>
+
+<span class="sd">    .. [1] Von Neumann, J. (1941). Distribution of the ratio of the mean square</span>
+<span class="sd">       successive difference to the variance. The Annals of Mathematical</span>
+<span class="sd">       Statistics, 12(4), 367-395.</span>
+
+<span class="sd">    .. [2] The Mean Square Successive Difference</span>
+<span class="sd">       J. von Neumann, R. H. Kent, H. R. Bellinson and B. I. Hart</span>
+<span class="sd">       The Annals of Mathematical Statistics</span>
+<span class="sd">       Vol. 12, No. 2 (Jun., 1941) , pp. 153-162</span>
+<span class="sd">       http://www.jstor.org/stable/2235765</span>
+
+<span class="sd">    .. [3] Moments of the Ratio of the Mean Square Successive Difference to the</span>
+<span class="sd">       Mean Square Difference in Samples From a Normal Universe J. D. Williams</span>
+<span class="sd">       The Annals of Mathematical Statistics</span>
+<span class="sd">       Vol. 12, No. 2 (Jun., 1941) , pp. 239-241</span>
+<span class="sd">       http://www.jstor.org/stable/2235775</span>
+
+<span class="sd">    .. [4] Madansky, Albert,</span>
+<span class="sd">       Testing for Independence of Observations,</span>
+<span class="sd">       In: Prescriptions for Working Statisticians</span>
+<span class="sd">       Springer New York</span>
+<span class="sd">       10.1007/978-1-4612-3794-5_4</span>
+<span class="sd">       http://dx.doi.org/10.1007/978-1-4612-3794-5_4</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">mean_square_successive_difference</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">power</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ediff1d</span><span class="p">(</span><span class="n">data</span><span class="p">),</span> <span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+    <span class="n">von_neumann_ratio</span> <span class="o">=</span> <span class="n">mean_square_successive_difference</span> <span class="o">/</span> <span class="n">data</span><span class="o">.</span><span class="n">var</span><span class="p">()</span>
+    <span class="n">von_neumann_mean</span> <span class="o">=</span> <span class="mf">2.</span>
+    <span class="n">von_neumann_var</span> <span class="o">=</span> <span class="mf">4.</span> <span class="o">*</span> <span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">size</span> <span class="o">-</span> <span class="mf">2.</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">size</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">-</span> <span class="mf">1.</span><span class="p">)</span>
+    <span class="n">acceptance_region</span> <span class="o">=</span> <span class="n">scipy</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">norm</span><span class="o">.</span><span class="n">interval</span><span class="p">(</span>
+        <span class="mf">1.0</span> <span class="o">-</span> <span class="n">alpha</span><span class="p">,</span>
+        <span class="n">loc</span><span class="o">=</span><span class="n">von_neumann_mean</span><span class="p">,</span>
+        <span class="n">scale</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">von_neumann_var</span><span class="p">)</span>
+    <span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
+        <span class="k">print</span><span class="p">(</span>
+            <span class="p">(</span>
+                <span class="s">&quot;von Neumann ratio v = {:.2f},</span><span class="se">\n</span><span class="s">&quot;</span>
+                <span class="s">&quot;acceptance region at {:.0f}</span><span class="si">% s</span><span class="s">ignificance level is &quot;</span>
+                <span class="s">&quot;({:.2f}, {:.2f})&quot;</span>
+            <span class="p">)</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                <span class="n">von_neumann_ratio</span><span class="p">,</span>
+                <span class="n">alpha</span> <span class="o">*</span> <span class="mi">100</span><span class="p">,</span>
+                <span class="n">acceptance_region</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+                <span class="n">acceptance_region</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+            <span class="p">)</span>
+        <span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">acceptance_region</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">von_neumann_ratio</span> <span class="o">&lt;</span> <span class="n">acceptance_region</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../index.html">pysimoa</a></h1>
+
+
+
+
+
+<p>
+<iframe src="https://ghbtns.com/github-btn.html?user=andsor&repo=pysimoa&type=watch&count=true&size=large"
+  allowtransparency="true" frameborder="0" scrolling="0" width="200px" height="35px"></iframe>
+</p>
+
+
+<h3>Navigation</h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../about.html">About</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../setup.html">Setup</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../developer.html">Developer Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../reference.html">Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../zbib.html">Bibliography</a></li>
+</ul>
+
+
+<hr />
+<ul>
+    
+    <li class="toctree-l1"><a href="http://pypi.python.org/pypi/simoa">Package (PyPI)</a></li>
+    
+    <li class="toctree-l1"><a href="http://github.com/andsor/pysimoa">Source (GitHub)</a></li>
+    
+    <li class="toctree-l1"><a href="http://github.com/andsor/pysimoa/issues">Issues (GitHub)</a></li>
+    
+    <li class="toctree-l1"><a href="http://www.citeulike.org/group/19419">Bibliography (CiteULike)</a></li>
+    
+</ul>
+
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      
+      
+      
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.3.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.6</a>
+      
+    </div>
+
+    
+    <a href="https://github.com/andsor/pysimoa" class="github">
+        <img style="position: absolute; top: 0; right: 0; border: 0;" src="https://s3.amazonaws.com/github/ribbons/forkme_right_darkblue_121621.png" alt="Fork me on GitHub"  class="github"/>
+    </a>
+    
+
+    
+  </body>
+</html>

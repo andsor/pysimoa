@@ -1,0 +1,7 @@
+simoa
+=====
+
+.. toctree::
+   :maxdepth: 4
+
+   simoa

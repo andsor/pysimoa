@@ -1,0 +1,501 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>simoa package &mdash; pysimoa documentation</title>
+    
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '0.4.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="author" title="About these documents" href="../about.html" />
+    <link rel="top" title="pysimoa documentation" href="../index.html" />
+   
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9">
+
+  </head>
+  <body role="document">  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="simoa-package">
+<h1>simoa package<a class="headerlink" href="#simoa-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-simoa.mser">
+<span id="simoa-mser-module"></span><h2>simoa.mser module<a class="headerlink" href="#module-simoa.mser" title="Permalink to this headline">¶</a></h2>
+<p>Copyright 2015 The pysimoa Developers</p>
+<p>Licensed under the Apache License, Version 2.0 (the &#8220;License&#8221;);
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at</p>
+<blockquote>
+<div><a class="reference external" href="http://www.apache.org/licenses/LICENSE-2.0">http://www.apache.org/licenses/LICENSE-2.0</a></div></blockquote>
+<p>Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an &#8220;AS IS&#8221; BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.</p>
+<dl class="exception">
+<dt id="simoa.mser.MSERException">
+<em class="property">exception </em><code class="descclassname">simoa.mser.</code><code class="descname">MSERException</code><a class="reference internal" href="../_modules/simoa/mser.html#MSERException"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#simoa.mser.MSERException" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="http://docs.python.org/3/library/exceptions.html#BaseException" title="(in Python v3.4)"><code class="xref py py-class docutils literal"><span class="pre">BaseException</span></code></a></p>
+</dd></dl>
+
+<dl class="exception">
+<dt id="simoa.mser.MSERInsufficientDataError">
+<em class="property">exception </em><code class="descclassname">simoa.mser.</code><code class="descname">MSERInsufficientDataError</code><a class="reference internal" href="../_modules/simoa/mser.html#MSERInsufficientDataError"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#simoa.mser.MSERInsufficientDataError" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#simoa.mser.MSERException" title="simoa.mser.MSERException"><code class="xref py py-class docutils literal"><span class="pre">simoa.mser.MSERException</span></code></a>, <a class="reference external" href="http://docs.python.org/3/library/exceptions.html#RuntimeError" title="(in Python v3.4)"><code class="xref py py-class docutils literal"><span class="pre">RuntimeError</span></code></a></p>
+</dd></dl>
+
+<dl class="class">
+<dt id="simoa.mser.MSERReturnValue">
+<em class="property">class </em><code class="descclassname">simoa.mser.</code><code class="descname">MSERReturnValue</code><span class="sig-paren">(</span><em>mean</em>, <em>ci</em>, <em>env</em><span class="sig-paren">)</span><a class="headerlink" href="#simoa.mser.MSERReturnValue" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="http://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.4)"><code class="xref py py-class docutils literal"><span class="pre">tuple</span></code></a></p>
+<dl class="method">
+<dt id="simoa.mser.MSERReturnValue.__getnewargs__">
+<code class="descname">__getnewargs__</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#simoa.mser.MSERReturnValue.__getnewargs__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return self as a plain tuple.  Used by copy and pickle.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="simoa.mser.MSERReturnValue.__getstate__">
+<code class="descname">__getstate__</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#simoa.mser.MSERReturnValue.__getstate__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Exclude the OrderedDict from pickling</p>
+</dd></dl>
+
+<dl class="staticmethod">
+<dt id="simoa.mser.MSERReturnValue.__new__">
+<em class="property">static </em><code class="descname">__new__</code><span class="sig-paren">(</span><em>_cls</em>, <em>mean</em>, <em>ci</em>, <em>env</em><span class="sig-paren">)</span><a class="headerlink" href="#simoa.mser.MSERReturnValue.__new__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create new instance of MSERReturnValue(mean, ci, env)</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="simoa.mser.MSERReturnValue.__repr__">
+<code class="descname">__repr__</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#simoa.mser.MSERReturnValue.__repr__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a nicely formatted representation string</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="simoa.mser.MSERReturnValue.ci">
+<code class="descname">ci</code><a class="headerlink" href="#simoa.mser.MSERReturnValue.ci" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 1</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="simoa.mser.MSERReturnValue.env">
+<code class="descname">env</code><a class="headerlink" href="#simoa.mser.MSERReturnValue.env" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 2</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="simoa.mser.MSERReturnValue.mean">
+<code class="descname">mean</code><a class="headerlink" href="#simoa.mser.MSERReturnValue.mean" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 0</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="simoa.mser.compute_mser5_interval">
+<code class="descclassname">simoa.mser.</code><code class="descname">compute_mser5_interval</code><span class="sig-paren">(</span><em>data</em>, <em>confidence_level=0.68268949213708585</em>, <em>continue_insufficient_data=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/simoa/mser.html#compute_mser5_interval"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#simoa.mser.compute_mser5_interval" title="Permalink to this definition">¶</a></dt>
+<dd><p>Estimate the steady-state mean and the interval by the MSER-5 method</p>
+<p class="rubric">Notes</p>
+<p>&#8220;MSER-5 (Franklin and White 2008) is a modification of the Marginal
+Confidence Rule (MCR) or the Marginal Standard Error Rule (MSER) proposed
+by White (1997).&#8221; <a href="#id16"><span class="problematic" id="id17"><span id="id1"></span>[1]_</span></a>
+&#8220;MSER-5 is a sequential procedure that uses the method of nonoverlapping
+batch means (NBM) to deliver not only a data-truncation point (i.e., end of
+the “warm-up period”) but also point and CI estimators [...] computed from
+the truncated (“warmed-up”) sequence of batch means.&#8221; <a href="#id18"><span class="problematic" id="id19"><span id="id2"></span>[1]_</span></a></p>
+<p class="rubric">References</p>
+<table class="docutils footnote" frame="void" id="id3" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label">[1]</td><td>Mokashi, A. C. et al. Performance comparison of MSER-5 and N-Skart
+on the simulation start-up problem. In <em>Proceedings of the Winter
+Simulation Conference</em>, 971-982 (2010).
+<a class="reference external" href="http://www.ise.ncsu.edu/jwilson/files/mokashi10wsc.pdf">http://www.ise.ncsu.edu/jwilson/files/mokashi10wsc.pdf</a></td></tr>
+</tbody>
+</table>
+<table class="docutils footnote" frame="void" id="id4" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label">[2]</td><td>Franklin, W. W. &amp; White, K. P. Stationarity tests and MSER-5:
+Exploring the intuition behind mean-squared-error-reduction in
+detecting and correcting initialization bias. In Winter Simulation
+Conference, 541-546 (2008).
+<a class="reference external" href="http://www.informs-sim.org/wsc08papers/064.pdf">http://www.informs-sim.org/wsc08papers/064.pdf</a></td></tr>
+</tbody>
+</table>
+<table class="docutils footnote" frame="void" id="id5" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label">[3]</td><td>White, K. P. An effective truncation heuristic for bias reduction in
+simulation output. Simulation 69, 323-334 (1997).
+<a class="reference external" href="http://dx.doi.org/10.1177/003754979706900601">http://dx.doi.org/10.1177/003754979706900601</a></td></tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+<div class="section" id="module-simoa.nskart">
+<span id="simoa-nskart-module"></span><h2>simoa.nskart module<a class="headerlink" href="#module-simoa.nskart" title="Permalink to this headline">¶</a></h2>
+<p>Copyright 2015 The pysimoa Developers</p>
+<p>Licensed under the Apache License, Version 2.0 (the &#8220;License&#8221;);
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at</p>
+<blockquote>
+<div><a class="reference external" href="http://www.apache.org/licenses/LICENSE-2.0">http://www.apache.org/licenses/LICENSE-2.0</a></div></blockquote>
+<p>Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an &#8220;AS IS&#8221; BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.</p>
+<dl class="exception">
+<dt id="simoa.nskart.NSkartException">
+<em class="property">exception </em><code class="descclassname">simoa.nskart.</code><code class="descname">NSkartException</code><a class="reference internal" href="../_modules/simoa/nskart.html#NSkartException"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#simoa.nskart.NSkartException" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="http://docs.python.org/3/library/exceptions.html#BaseException" title="(in Python v3.4)"><code class="xref py py-class docutils literal"><span class="pre">BaseException</span></code></a></p>
+</dd></dl>
+
+<dl class="exception">
+<dt id="simoa.nskart.NSkartInsufficientDataError">
+<em class="property">exception </em><code class="descclassname">simoa.nskart.</code><code class="descname">NSkartInsufficientDataError</code><a class="reference internal" href="../_modules/simoa/nskart.html#NSkartInsufficientDataError"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#simoa.nskart.NSkartInsufficientDataError" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#simoa.nskart.NSkartException" title="simoa.nskart.NSkartException"><code class="xref py py-class docutils literal"><span class="pre">simoa.nskart.NSkartException</span></code></a>, <a class="reference external" href="http://docs.python.org/3/library/exceptions.html#RuntimeError" title="(in Python v3.4)"><code class="xref py py-class docutils literal"><span class="pre">RuntimeError</span></code></a></p>
+</dd></dl>
+
+<dl class="class">
+<dt id="simoa.nskart.NSkartReturnValue">
+<em class="property">class </em><code class="descclassname">simoa.nskart.</code><code class="descname">NSkartReturnValue</code><span class="sig-paren">(</span><em>mean</em>, <em>ci</em>, <em>env</em><span class="sig-paren">)</span><a class="headerlink" href="#simoa.nskart.NSkartReturnValue" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="http://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.4)"><code class="xref py py-class docutils literal"><span class="pre">tuple</span></code></a></p>
+<dl class="method">
+<dt id="simoa.nskart.NSkartReturnValue.__getnewargs__">
+<code class="descname">__getnewargs__</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#simoa.nskart.NSkartReturnValue.__getnewargs__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return self as a plain tuple.  Used by copy and pickle.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="simoa.nskart.NSkartReturnValue.__getstate__">
+<code class="descname">__getstate__</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#simoa.nskart.NSkartReturnValue.__getstate__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Exclude the OrderedDict from pickling</p>
+</dd></dl>
+
+<dl class="staticmethod">
+<dt id="simoa.nskart.NSkartReturnValue.__new__">
+<em class="property">static </em><code class="descname">__new__</code><span class="sig-paren">(</span><em>_cls</em>, <em>mean</em>, <em>ci</em>, <em>env</em><span class="sig-paren">)</span><a class="headerlink" href="#simoa.nskart.NSkartReturnValue.__new__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create new instance of NSkartReturnValue(mean, ci, env)</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="simoa.nskart.NSkartReturnValue.__repr__">
+<code class="descname">__repr__</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#simoa.nskart.NSkartReturnValue.__repr__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a nicely formatted representation string</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="simoa.nskart.NSkartReturnValue.ci">
+<code class="descname">ci</code><a class="headerlink" href="#simoa.nskart.NSkartReturnValue.ci" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 1</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="simoa.nskart.NSkartReturnValue.env">
+<code class="descname">env</code><a class="headerlink" href="#simoa.nskart.NSkartReturnValue.env" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 2</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="simoa.nskart.NSkartReturnValue.mean">
+<code class="descname">mean</code><a class="headerlink" href="#simoa.nskart.NSkartReturnValue.mean" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 0</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="exception">
+<dt id="simoa.nskart.NSkartTooFewValues">
+<em class="property">exception </em><code class="descclassname">simoa.nskart.</code><code class="descname">NSkartTooFewValues</code><a class="reference internal" href="../_modules/simoa/nskart.html#NSkartTooFewValues"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#simoa.nskart.NSkartTooFewValues" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#simoa.nskart.NSkartException" title="simoa.nskart.NSkartException"><code class="xref py py-class docutils literal"><span class="pre">simoa.nskart.NSkartException</span></code></a>, <a class="reference external" href="http://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.4)"><code class="xref py py-class docutils literal"><span class="pre">ValueError</span></code></a></p>
+</dd></dl>
+
+<dl class="data">
+<dt id="simoa.nskart.ONE_SIGMA">
+<code class="descclassname">simoa.nskart.</code><code class="descname">ONE_SIGMA</code><em class="property"> = 0.68268949213708585</em><a class="headerlink" href="#simoa.nskart.ONE_SIGMA" title="Permalink to this definition">¶</a></dt>
+<dd><p>Minimum number of data points</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="simoa.nskart.compute_nskart_interval">
+<code class="descclassname">simoa.nskart.</code><code class="descname">compute_nskart_interval</code><span class="sig-paren">(</span><em>data</em>, <em>confidence_level=0.68268949213708585</em>, <em>continue_insufficient_data=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/simoa/nskart.html#compute_nskart_interval"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#simoa.nskart.compute_nskart_interval" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute the confidence interval for the steady-state mean</p>
+<p>Implements the N-Skart algorithm, &#8220;a nonsequential procedure designed to
+deliver a confidence interval for the steady-state mean of a simulation
+output process when the user supplies a single simulation-generated time
+series of arbitrary size and specifies the required coverage probability
+for a confidence interval based on that data set.&#8221;</p>
+<p class="rubric">Notes</p>
+<p>&#8220;N-Skart is a variant of the method of batch means that exploits separate
+adjustments to the half-length of the CI so as to account for the effects
+on the distribution of the underlying Student’s t-statistic that arise from
+skewness (nonnormality) and autocorrelation of the batch means.
+If the sample size is sufficiently large, then N-Skart delivers not only
+a CI but also a point estimator for the steady-state mean that
+is approximately free of initialization bias.&#8221;</p>
+<p class="rubric">References</p>
+<table class="docutils footnote" frame="void" id="id6" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label">[1]</td><td>Tafazzoli, A.; Steiger, N.M.; Wilson, J.R.,
+&#8220;N-Skart: A Nonsequential Skewness- and Autoregression-Adjusted
+Batch-Means Procedure for Simulation Analysis,&#8221;
+Automatic Control, IEEE Transactions on , vol.56, no.2, pp.254,264, 2011
+doi: 10.1109/TAC.2010.2052137</td></tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+<div class="section" id="module-simoa.stats">
+<span id="simoa-stats-module"></span><h2>simoa.stats module<a class="headerlink" href="#module-simoa.stats" title="Permalink to this headline">¶</a></h2>
+<p>Copyright 2015 The pysimoa Developers</p>
+<p>Licensed under the Apache License, Version 2.0 (the &#8220;License&#8221;);
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at</p>
+<blockquote>
+<div><a class="reference external" href="http://www.apache.org/licenses/LICENSE-2.0">http://www.apache.org/licenses/LICENSE-2.0</a></div></blockquote>
+<p>Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an &#8220;AS IS&#8221; BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.</p>
+<dl class="function">
+<dt id="simoa.stats.online_variance">
+<code class="descclassname">simoa.stats.</code><code class="descname">online_variance</code><span class="sig-paren">(</span><em>row_a</em>, <em>row_b</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/simoa/stats.html#online_variance"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#simoa.stats.online_variance" title="Permalink to this definition">¶</a></dt>
+<dd><p>Combine the sample mean and variance of two samples</p>
+<p>This is a function ready for use for <cite>reduce</cite>.
+It is commutative and associative.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>row_b</strong> (<em>row_a,</em>) &#8211; Tuple-like variables with first item being the number of data points
+in that sample, the second item being the mean of that sample,
+and the third item being the sum of squared differences of the data
+points to the mean in that sample.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><ul class="simple">
+<li><strong>ret</strong> (<em>tuple</em>) &#8211;
+<code class="docutils literal"><span class="pre">(n_ab,</span> <span class="pre">mean_ab,</span> <span class="pre">m2_ab)</span></code></li>
+<li><em>n_ab</em> &#8211;
+number of data points in the combined sample</li>
+<li><em>mean_ab</em> &#8211;
+mean of the combined sample</li>
+<li><em>m2_ab</em> &#8211;
+sum of squared difference to the mean.
+To get the variance, divide by <code class="docutils literal"><span class="pre">n_ab</span> <span class="pre">-</span> <span class="pre">1</span></code>.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Notes</p>
+<div class="math">
+\[n_{ab} = n_a + n_b
+\bar{x}_ab = \frac{n_a \bar{x}_a + n_b \bar{x}_b}{n_{ab}}
+S_{ab} = S_a + S_b + \frac{n_a n_b}{n_{ab}} (\bar{x}_b - \bar{x}_a)^2\]</div>
+<p class="rubric">References</p>
+<p><a class="reference external" href="https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#Parallel_algorithm">https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#Parallel_algorithm</a></p>
+<p>Chan, Tony F., Gene H. Golub, and Randall J. LeVeque. &#8220;Algorithms for
+computing the sample variance: Analysis and recommendations.&#8221; The American
+Statistician 37.3 (1983): 242-247.
+<a class="reference external" href="http://www.jstor.org/stable/2683386">http://www.jstor.org/stable/2683386</a></p>
+<p>Chan, Tony F., Gene H. Golub, and Randall J. LeVeque. &#8220;Updating formulae
+and a pairwise algorithm for computing sample variances.&#8221; COMPSTAT 1982 5th
+Symposium held at Toulouse 1982. Physica-Verlag HD, 1982.
+<a class="reference external" href="http://i.stanford.edu/pub/cstr/reports/cs/tr/79/773/CS-TR-79-773.pdf">http://i.stanford.edu/pub/cstr/reports/cs/tr/79/773/CS-TR-79-773.pdf</a></p>
+</dd></dl>
+
+<dl class="function">
+<dt id="simoa.stats.von_neumann_ratio_test">
+<code class="descclassname">simoa.stats.</code><code class="descname">von_neumann_ratio_test</code><span class="sig-paren">(</span><em>data</em>, <em>alpha</em>, <em>verbose=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/simoa/stats.html#von_neumann_ratio_test"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#simoa.stats.von_neumann_ratio_test" title="Permalink to this definition">¶</a></dt>
+<dd><blockquote>
+<div><p>Test a series of observations for independence (lack of autocorrelation)</p>
+<p>The von-Neumann ratio test is a statistical test designed for testing the
+independence of subsequent observations.
+The null hypothesis is that the data are independent and normally
+distributed.</p>
+<dl class="docutils">
+<dt>alpha: float</dt>
+<dd>Significance level.
+This is the probability threshold below which the null hypothesis will
+be rejected.</dd>
+</dl>
+<p>Given a series <span class="math">\(x_i\)</span> of <span class="math">\(n\)</span> data points, the von-Neumann test
+statistic is <a href="#id20"><span class="problematic" id="id21"><span id="id7"></span>[1]_</span></a> <a href="#id22"><span class="problematic" id="id23"><span id="id8"></span>[6]_</span></a></p>
+<div class="math">
+\[v =\]</div>
+</div></blockquote>
+<dl class="docutils">
+<dt>rac{sum_{i=1}^{n-1} (x_{i+1} - x_i)^2}{sum_{i=1}^n (x_i -</dt>
+<dd><blockquote class="first">
+<div>ar{x})^2</div></blockquote>
+<p class="last">Under the null hypothesis, the mean <span class="math">\(ar{v} = 2\)</span> and the variance
+:math:<a href="#id9"><span class="problematic" id="id10">`</span></a>sigma^2_v =</p>
+</dd>
+</dl>
+<p>rac{4 (n - 2)}{(n-1)(n+1)}` <a href="#id24"><span class="problematic" id="id25"><span id="id11"></span>[3]_</span></a>.</p>
+<blockquote>
+<div><table class="docutils footnote" frame="void" id="id12" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label">[1]</td><td>Von Neumann, J. (1941). Distribution of the ratio of the mean square
+successive difference to the variance. The Annals of Mathematical
+Statistics, 12(4), 367-395.</td></tr>
+</tbody>
+</table>
+<table class="docutils footnote" frame="void" id="id13" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label">[2]</td><td>The Mean Square Successive Difference
+J. von Neumann, R. H. Kent, H. R. Bellinson and B. I. Hart
+The Annals of Mathematical Statistics
+Vol. 12, No. 2 (Jun., 1941) , pp. 153-162
+<a class="reference external" href="http://www.jstor.org/stable/2235765">http://www.jstor.org/stable/2235765</a></td></tr>
+</tbody>
+</table>
+<table class="docutils footnote" frame="void" id="id14" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label">[3]</td><td>Moments of the Ratio of the Mean Square Successive Difference to the
+Mean Square Difference in Samples From a Normal Universe J. D. Williams
+The Annals of Mathematical Statistics
+Vol. 12, No. 2 (Jun., 1941) , pp. 239-241
+<a class="reference external" href="http://www.jstor.org/stable/2235775">http://www.jstor.org/stable/2235775</a></td></tr>
+</tbody>
+</table>
+<table class="docutils footnote" frame="void" id="id15" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label">[4]</td><td>Madansky, Albert,
+Testing for Independence of Observations,
+In: Prescriptions for Working Statisticians
+Springer New York
+10.1007/978-1-4612-3794-5_4
+<a class="reference external" href="http://dx.doi.org/10.1007/978-1-4612-3794-5_4">http://dx.doi.org/10.1007/978-1-4612-3794-5_4</a></td></tr>
+</tbody>
+</table>
+</div></blockquote>
+</dd></dl>
+
+</div>
+<div class="section" id="module-simoa">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-simoa" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">pysimoa</a></h1>
+
+
+
+
+
+<p>
+<iframe src="https://ghbtns.com/github-btn.html?user=andsor&repo=pysimoa&type=watch&count=true&size=large"
+  allowtransparency="true" frameborder="0" scrolling="0" width="200px" height="35px"></iframe>
+</p>
+
+
+<h3>Navigation</h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../about.html">About</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../setup.html">Setup</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../developer.html">Developer Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../reference.html">Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../zbib.html">Bibliography</a></li>
+</ul>
+
+
+<hr />
+<ul>
+    
+    <li class="toctree-l1"><a href="http://pypi.python.org/pypi/simoa">Package (PyPI)</a></li>
+    
+    <li class="toctree-l1"><a href="http://github.com/andsor/pysimoa">Source (GitHub)</a></li>
+    
+    <li class="toctree-l1"><a href="http://github.com/andsor/pysimoa/issues">Issues (GitHub)</a></li>
+    
+    <li class="toctree-l1"><a href="http://www.citeulike.org/group/19419">Bibliography (CiteULike)</a></li>
+    
+</ul>
+
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/_rst/simoa.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      
+      
+      
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.3.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.6</a>
+      
+      |
+      <a href="../_sources/_rst/simoa.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+    <a href="https://github.com/andsor/pysimoa" class="github">
+        <img style="position: absolute; top: 0; right: 0; border: 0;" src="https://s3.amazonaws.com/github/ribbons/forkme_right_darkblue_121621.png" alt="Fork me on GitHub"  class="github"/>
+    </a>
+    
+
+    
+  </body>
+</html>

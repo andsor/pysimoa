@@ -1,0 +1,820 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>simoa.nskart &mdash; pysimoa documentation</title>
+    
+    <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '0.4.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="author" title="About these documents" href="../../about.html" />
+    <link rel="top" title="pysimoa documentation" href="../../index.html" />
+    <link rel="up" title="Module code" href="../index.html" />
+   
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9">
+
+  </head>
+  <body role="document">  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for simoa.nskart</h1><div class="highlight"><pre>
+<span class="c"># -*- coding: utf-8 -*-</span>
+
+<span class="sd">&#39;&#39;&#39;</span>
+
+<span class="sd">   Copyright 2015 The pysimoa Developers</span>
+
+<span class="sd">   Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);</span>
+<span class="sd">   you may not use this file except in compliance with the License.</span>
+<span class="sd">   You may obtain a copy of the License at</span>
+
+<span class="sd">       http://www.apache.org/licenses/LICENSE-2.0</span>
+
+<span class="sd">   Unless required by applicable law or agreed to in writing, software</span>
+<span class="sd">   distributed under the License is distributed on an &quot;AS IS&quot; BASIS,</span>
+<span class="sd">   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</span>
+<span class="sd">   See the License for the specific language governing permissions and</span>
+<span class="sd">   limitations under the License.</span>
+
+<span class="sd">&#39;&#39;&#39;</span>
+
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">division</span>
+
+<span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">import</span> <span class="nn">math</span>
+<span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">namedtuple</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">scipy.stats</span>
+<span class="kn">from</span> <span class="nn">simoa.stats</span> <span class="kn">import</span> <span class="n">von_neumann_ratio_test</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="n">__name__</span><span class="p">)</span>
+
+
+<span class="c"># check python 3</span>
+<span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="mi">3</span> <span class="o">/</span> <span class="mi">2</span> <span class="o">==</span> <span class="mf">1.5</span><span class="p">):</span>
+    <span class="k">raise</span> <span class="ne">RuntimeError</span>
+
+
+<span class="n">ONE_SIGMA</span> <span class="o">=</span> <span class="n">scipy</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">norm</span><span class="p">()</span><span class="o">.</span><span class="n">cdf</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="o">-</span> <span class="n">scipy</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">norm</span><span class="p">()</span><span class="o">.</span><span class="n">cdf</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+
+
+<span class="sd">&quot;&quot;&quot; Minimum number of data points &quot;&quot;&quot;</span>
+<span class="n">NSKART_MIN_DATA_POINTS</span> <span class="o">=</span> <span class="mi">1280</span>
+
+<span class="n">NSKART_INITIAL_NUMBER_OF_BATCHES_IN_SPACER</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="n">NSKART_MAXIMUM_NUMBER_OF_BATCHES_IN_SPACER</span> <span class="o">=</span> <span class="mi">10</span>
+<span class="n">NSKART_MAXIMUM_NUMBER_OF_BATCHES_IN_SPACER_SKEWED</span> <span class="o">=</span> <span class="mi">3</span>
+<span class="n">NSKART_INITIAL_BATCH_NUMBER</span> <span class="o">=</span> <span class="mi">1280</span>
+<span class="n">NSKART_RANDOMNESS_TEST_SIGNIFICANCE</span> <span class="o">=</span> <span class="mf">0.20</span>
+<span class="n">NSKART_RANDOMNESS_TEST_SIGNIFICANCE_KEY</span> <span class="o">=</span> <span class="s">r&#39;\alpha_{\text{ran}}&#39;</span>
+<span class="n">NSKART_NONSPACED_RANDOMNESS_TEST_KEY</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="s">&#39;nonspaced batch means randomness test passed&#39;</span>
+<span class="p">)</span>
+<span class="n">NSKART_SPACED_RANDOMNESS_TEST_KEY</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="s">&#39;spaced batch means randomness test passed&#39;</span>
+<span class="p">)</span>
+<span class="n">NSKART_INSUFFICIENT_DATA_KEY</span> <span class="o">=</span> <span class="s">&quot;insufficient data&quot;</span>
+<span class="n">NSKART_GRAND_AVERAGE_KEY</span> <span class="o">=</span> <span class="s">r&quot;\bar{Y}(m,k&#39;)&quot;</span>
+<span class="n">NSKART_SAMPLE_VAR_KEY</span> <span class="o">=</span> <span class="s">r&quot;S^2_{m,k&#39;}&quot;</span>
+<span class="n">NSKART_SAMPLE_LAG1_CORR</span> <span class="o">=</span> <span class="s">r&quot;\hat{\varphi}_{Y(m)}&quot;</span>
+<span class="n">NSKART_BATCHED_GRAND_MEAN_KEY</span> <span class="o">=</span> <span class="s">r&quot;\bar{Y}(m,k&#39;&#39;,d&#39;)&quot;</span>
+<span class="n">NSKART_BATCHED_SAMPLE_VAR_KEY</span> <span class="o">=</span> <span class="s">r&quot;S^2_{m,k&#39;&#39;,d&#39;}&quot;</span>
+<span class="n">NSKART_BATCHED_SKEW_KEY</span> <span class="o">=</span> <span class="s">r&quot;\hat{\mathcal{B}}_{m,k&#39;&#39;}&quot;</span>
+
+
+<div class="viewcode-block" id="NSkartException"><a class="viewcode-back" href="../../_rst/simoa.html#simoa.nskart.NSkartException">[docs]</a><span class="k">class</span> <span class="nc">NSkartException</span><span class="p">(</span><span class="ne">BaseException</span><span class="p">):</span>
+    <span class="k">pass</span>
+
+</div>
+<div class="viewcode-block" id="NSkartInsufficientDataError"><a class="viewcode-back" href="../../_rst/simoa.html#simoa.nskart.NSkartInsufficientDataError">[docs]</a><span class="k">class</span> <span class="nc">NSkartInsufficientDataError</span><span class="p">(</span><span class="n">NSkartException</span><span class="p">,</span> <span class="ne">RuntimeError</span><span class="p">):</span>
+    <span class="k">pass</span>
+
+</div>
+<div class="viewcode-block" id="NSkartTooFewValues"><a class="viewcode-back" href="../../_rst/simoa.html#simoa.nskart.NSkartTooFewValues">[docs]</a><span class="k">class</span> <span class="nc">NSkartTooFewValues</span><span class="p">(</span><span class="n">NSkartException</span><span class="p">,</span> <span class="ne">ValueError</span><span class="p">):</span>
+    <span class="k">pass</span>
+
+</div>
+<span class="n">NSkartReturnValue</span> <span class="o">=</span> <span class="n">namedtuple</span><span class="p">(</span>
+    <span class="s">&#39;NSkartReturnValue&#39;</span><span class="p">,</span>
+    <span class="p">[</span><span class="s">&#39;mean&#39;</span><span class="p">,</span> <span class="s">&#39;ci&#39;</span><span class="p">,</span> <span class="s">&#39;env&#39;</span><span class="p">]</span>
+<span class="p">)</span>
+
+
+<div class="viewcode-block" id="compute_nskart_interval"><a class="viewcode-back" href="../../_rst/simoa.html#simoa.nskart.compute_nskart_interval">[docs]</a><span class="k">def</span> <span class="nf">compute_nskart_interval</span><span class="p">(</span>
+    <span class="n">data</span><span class="p">,</span> <span class="n">confidence_level</span><span class="o">=</span><span class="n">ONE_SIGMA</span><span class="p">,</span> <span class="n">continue_insufficient_data</span><span class="o">=</span><span class="bp">False</span>
+<span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Compute the confidence interval for the steady-state mean</span>
+
+<span class="sd">    Implements the N-Skart algorithm, &quot;a nonsequential procedure designed to</span>
+<span class="sd">    deliver a confidence interval for the steady-state mean of a simulation</span>
+<span class="sd">    output process when the user supplies a single simulation-generated time</span>
+<span class="sd">    series of arbitrary size and specifies the required coverage probability</span>
+<span class="sd">    for a confidence interval based on that data set.&quot;</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    &quot;N-Skart is a variant of the method of batch means that exploits separate</span>
+<span class="sd">    adjustments to the half-length of the CI so as to account for the effects</span>
+<span class="sd">    on the distribution of the underlying Student’s t-statistic that arise from</span>
+<span class="sd">    skewness (nonnormality) and autocorrelation of the batch means.</span>
+<span class="sd">    If the sample size is sufficiently large, then N-Skart delivers not only</span>
+<span class="sd">    a CI but also a point estimator for the steady-state mean that</span>
+<span class="sd">    is approximately free of initialization bias.&quot;</span>
+
+<span class="sd">    References</span>
+<span class="sd">    ----------</span>
+
+<span class="sd">    .. [1] Tafazzoli, A.; Steiger, N.M.; Wilson, J.R.,</span>
+<span class="sd">       &quot;N-Skart: A Nonsequential Skewness- and Autoregression-Adjusted</span>
+<span class="sd">       Batch-Means Procedure for Simulation Analysis,&quot;</span>
+<span class="sd">       Automatic Control, IEEE Transactions on , vol.56, no.2, pp.254,264, 2011</span>
+<span class="sd">       doi: 10.1109/TAC.2010.2052137</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+
+    <span class="c"># STEPS 1 -- 4</span>
+    <span class="n">env</span> <span class="o">=</span> <span class="n">_get_independent_data</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">continue_insufficient_data</span><span class="p">)</span>
+
+    <span class="c"># STEP 5a</span>
+    <span class="n">env</span> <span class="o">=</span> <span class="n">_step_5a</span><span class="p">(</span><span class="n">env</span><span class="p">)</span>
+
+    <span class="c"># STEP 5b</span>
+    <span class="n">env</span> <span class="o">=</span> <span class="n">_step_5b</span><span class="p">(</span><span class="n">env</span><span class="p">)</span>
+
+    <span class="c"># STEP 6</span>
+    <span class="n">env</span> <span class="o">=</span> <span class="n">_step_6</span><span class="p">(</span><span class="n">env</span><span class="p">)</span>
+
+    <span class="c"># STEP 7</span>
+    <span class="n">env</span> <span class="o">=</span> <span class="n">_step_7</span><span class="p">(</span><span class="n">env</span><span class="p">,</span> <span class="n">confidence_level</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">NSkartReturnValue</span><span class="p">(</span>
+        <span class="n">mean</span><span class="o">=</span><span class="n">env</span><span class="p">[</span><span class="n">NSKART_GRAND_AVERAGE_KEY</span><span class="p">],</span>
+        <span class="n">ci</span><span class="o">=</span><span class="n">env</span><span class="p">[</span><span class="s">&#39;CI&#39;</span><span class="p">],</span>
+        <span class="n">env</span><span class="o">=</span><span class="n">env</span><span class="p">,</span>
+    <span class="p">)</span>
+
+</div>
+<span class="k">def</span> <span class="nf">_get_independent_data</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">continue_insufficient_data</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+
+    <span class="c"># STEP 1</span>
+    <span class="n">env</span> <span class="o">=</span> <span class="n">_step_1</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+
+    <span class="k">while</span> <span class="bp">True</span><span class="p">:</span>
+        <span class="c"># STEP 2</span>
+        <span class="n">env</span> <span class="o">=</span> <span class="n">_step_2</span><span class="p">(</span><span class="n">env</span><span class="p">)</span>
+
+        <span class="c"># STEP 3</span>
+
+        <span class="c"># STEP 3a</span>
+        <span class="n">env</span> <span class="o">=</span> <span class="n">_step_3a</span><span class="p">(</span><span class="n">env</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">env</span><span class="p">[</span><span class="n">NSKART_NONSPACED_RANDOMNESS_TEST_KEY</span><span class="p">]:</span>
+            <span class="c"># randomness test passed (failed-to-reject)</span>
+            <span class="k">return</span> <span class="n">env</span>
+
+        <span class="c"># randomness test failed (independence hypothesis rejected)</span>
+
+        <span class="k">while</span> <span class="n">env</span><span class="p">[</span><span class="s">&quot;d&quot;</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">env</span><span class="p">[</span><span class="s">&quot;d^*&quot;</span><span class="p">]:</span>
+            <span class="c"># STEP 3b/d</span>
+            <span class="n">env</span> <span class="o">=</span> <span class="n">_step_3bd</span><span class="p">(</span><span class="n">env</span><span class="p">)</span>
+
+            <span class="c"># STEP 3c</span>
+            <span class="n">env</span> <span class="o">=</span> <span class="n">_step_3c</span><span class="p">(</span><span class="n">env</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">env</span><span class="p">[</span><span class="n">NSKART_SPACED_RANDOMNESS_TEST_KEY</span><span class="p">]:</span>
+                <span class="c"># randomness test passed (failed-to-reject)</span>
+                <span class="k">return</span> <span class="n">env</span>
+
+            <span class="c"># Continue with Step 3b/d</span>
+            <span class="k">continue</span>
+
+        <span class="c"># STEP 4</span>
+        <span class="n">env</span> <span class="o">=</span> <span class="n">_step_4</span><span class="p">(</span><span class="n">env</span><span class="p">,</span> <span class="n">continue_insufficient_data</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">NSKART_INSUFFICIENT_DATA_KEY</span> <span class="ow">in</span> <span class="n">env</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">env</span>
+
+        <span class="c"># continue with Step 2</span>
+        <span class="k">continue</span>
+
+    <span class="k">raise</span> <span class="ne">RuntimeError</span>
+
+
+<span class="k">def</span> <span class="nf">_compute_nonspaced_batch_means</span><span class="p">(</span><span class="n">env</span><span class="p">):</span>
+    <span class="k">return</span> <span class="p">(</span>
+        <span class="n">env</span><span class="p">[</span><span class="s">&#39;X_i&#39;</span><span class="p">]</span>
+        <span class="p">[:</span><span class="n">env</span><span class="p">[</span><span class="s">&#39;m&#39;</span><span class="p">]</span> <span class="o">*</span> <span class="n">env</span><span class="p">[</span><span class="s">&#39;k&#39;</span><span class="p">]]</span>
+        <span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="n">env</span><span class="p">[</span><span class="s">&#39;k&#39;</span><span class="p">],</span> <span class="n">env</span><span class="p">[</span><span class="s">&#39;m&#39;</span><span class="p">]))</span>
+        <span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">_step_1</span><span class="p">(</span><span class="n">data</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Perform step 1 of the N-Skart algorithm</span>
+
+<span class="sd">    Employs the `logging` module for output.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    data: array-like</span>
+<span class="sd">        Simulation output series</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;N-Skart step 1&#39;</span><span class="p">)</span>
+
+    <span class="c"># initialize persistent environment for the algorithm</span>
+    <span class="n">env</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+
+    <span class="n">env</span><span class="p">[</span><span class="s">&#39;X_i&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">data</span>
+    <span class="n">env</span><span class="p">[</span><span class="s">&#39;N&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">size</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;N = {}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">env</span><span class="p">[</span><span class="s">&#39;N&#39;</span><span class="p">]))</span>
+    <span class="k">if</span> <span class="n">env</span><span class="p">[</span><span class="s">&#39;N&#39;</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">NSKART_MIN_DATA_POINTS</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">NSkartTooFewValues</span><span class="p">(</span>
+            <span class="s">&#39;Need {} values, got {}.&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">NSKART_MIN_DATA_POINTS</span><span class="p">,</span> <span class="n">env</span><span class="p">[</span><span class="s">&#39;N&#39;</span><span class="p">])</span>
+        <span class="p">)</span>
+
+    <span class="c"># From the given sample data set of size N, compute the sample skewness of</span>
+    <span class="c"># the last 80% of the observations.</span>
+    <span class="c"># Skewness is defined as in the scipy function here, as</span>
+    <span class="c"># G_1 = \frac{n^2}{(n-1)(n-2)} \frac{m_3}{s^3}</span>
+    <span class="n">sample_skewness</span> <span class="o">=</span> <span class="n">scipy</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">skew</span><span class="p">(</span>
+        <span class="n">env</span><span class="p">[</span><span class="s">&#39;X_i&#39;</span><span class="p">][</span><span class="n">math</span><span class="o">.</span><span class="n">floor</span><span class="p">(</span><span class="n">env</span><span class="p">[</span><span class="s">&#39;N&#39;</span><span class="p">]</span> <span class="o">/</span> <span class="mi">5</span><span class="p">):],</span> <span class="n">bias</span><span class="o">=</span><span class="bp">False</span>
+    <span class="p">)</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+        <span class="s">&#39;Sample skewness of the last 80</span><span class="si">% o</span><span class="s">f the observations: {:.2f}&#39;</span>
+        <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">sample_skewness</span><span class="p">)</span>
+    <span class="p">)</span>
+
+    <span class="c"># set initial batch size</span>
+    <span class="n">env</span><span class="p">[</span><span class="s">&#39;m&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="mi">1</span> <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">sample_skewness</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="mf">4.0</span> <span class="k">else</span>
+        <span class="nb">min</span><span class="p">(</span><span class="mi">16</span><span class="p">,</span> <span class="n">math</span><span class="o">.</span><span class="n">floor</span><span class="p">(</span><span class="n">env</span><span class="p">[</span><span class="s">&#39;N&#39;</span><span class="p">]</span> <span class="o">/</span> <span class="mi">1280</span><span class="p">))</span>
+    <span class="p">)</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+        <span class="s">&#39;Initial batch size: m = {}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">env</span><span class="p">[</span><span class="s">&#39;m&#39;</span><span class="p">])</span>
+    <span class="p">)</span>
+
+    <span class="c"># set current number of batches in a spacer</span>
+    <span class="n">env</span><span class="p">[</span><span class="s">&#39;d&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">NSKART_INITIAL_NUMBER_OF_BATCHES_IN_SPACER</span>
+
+    <span class="c"># set maximum number of batches allowed in a spacer</span>
+    <span class="n">env</span><span class="p">[</span><span class="s">&#39;d^*&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">NSKART_MAXIMUM_NUMBER_OF_BATCHES_IN_SPACER</span>
+
+    <span class="c"># set nonspaced (adjacent) batch number</span>
+    <span class="n">env</span><span class="p">[</span><span class="s">&#39;k&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">NSKART_INITIAL_BATCH_NUMBER</span>
+
+    <span class="c"># set randomness test significance level</span>
+    <span class="n">env</span><span class="p">[</span><span class="n">NSKART_RANDOMNESS_TEST_SIGNIFICANCE_KEY</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">NSKART_RANDOMNESS_TEST_SIGNIFICANCE</span>
+    <span class="p">)</span>
+
+    <span class="c"># initialize randomness test counter</span>
+    <span class="n">env</span><span class="p">[</span><span class="s">&#39;b&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+
+    <span class="c"># initially processed sample size</span>
+    <span class="n">env</span><span class="p">[</span><span class="s">&#39;n&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">env</span><span class="p">[</span><span class="s">&#39;k&#39;</span><span class="p">]</span> <span class="o">*</span> <span class="n">env</span><span class="p">[</span><span class="s">&#39;m&#39;</span><span class="p">]</span>
+
+    <span class="c"># Having set an appropriate value for the initial batch size,</span>
+    <span class="c"># N-Skart uses the initial n = 1280m observations of the</span>
+    <span class="c"># overall sample of size N to compute k = 1280 nonspaced</span>
+    <span class="c"># (adjacent) batches of size m with an initial spacer consisting of</span>
+    <span class="c"># d ← 0 ignored batches preceding each “spaced” batch.</span>
+    <span class="n">env</span><span class="p">[</span><span class="s">&#39;Y_j(m)&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">_compute_nonspaced_batch_means</span><span class="p">(</span><span class="n">env</span><span class="p">)</span>
+
+    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;Post-step 1 environment: {}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">env</span><span class="p">))</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;Finish step 1&#39;</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">env</span>
+
+
+<span class="k">def</span> <span class="nf">_step_2</span><span class="p">(</span><span class="n">env</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Perform step 2 of the N-Skart algorithm</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    env: dict</span>
+<span class="sd">        The persistent algorithm environment (parameters and variables)</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    env: dict</span>
+<span class="sd">        The persistent algorithm environment (parameters and variables)</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">yjs_sample_skewness</span> <span class="o">=</span> <span class="n">scipy</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">skew</span><span class="p">(</span>
+        <span class="n">env</span><span class="p">[</span><span class="s">&#39;Y_j(m)&#39;</span><span class="p">][</span><span class="n">math</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="mf">0.8</span> <span class="o">*</span> <span class="n">env</span><span class="p">[</span><span class="s">&#39;k&#39;</span><span class="p">]):],</span> <span class="n">bias</span><span class="o">=</span><span class="bp">False</span>
+    <span class="p">)</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">((</span>
+        <span class="s">&#39;Sample skewness of the last 80</span><span class="si">% o</span><span class="s">f the current set of nonspaced batch&#39;</span>
+        <span class="s">&#39; means: {:.2f}&#39;</span>
+    <span class="p">)</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">yjs_sample_skewness</span><span class="p">)</span>
+    <span class="p">)</span>
+
+    <span class="k">if</span> <span class="nb">abs</span><span class="p">(</span><span class="n">yjs_sample_skewness</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mf">0.5</span><span class="p">:</span>
+        <span class="c"># reset the maximum number of batches per spacer</span>
+        <span class="n">env</span><span class="p">[</span><span class="s">&#39;d^*&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">NSKART_MAXIMUM_NUMBER_OF_BATCHES_IN_SPACER_SKEWED</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+            <span class="s">&#39;Reset the maximum number of batches per spacer to {}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                <span class="n">env</span><span class="p">[</span><span class="s">&#39;d^*&#39;</span><span class="p">]</span>
+            <span class="p">)</span>
+        <span class="p">)</span>
+
+    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;Post-step 2 environment: {}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">env</span><span class="p">))</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;Finish step 2&#39;</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">env</span>
+
+
+<span class="k">def</span> <span class="nf">_step_3a</span><span class="p">(</span><span class="n">env</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Perform step 3a of the N-Skart algorithm</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    env: dict</span>
+<span class="sd">        The persistent algorithm environment (parameters and variables)</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    env: dict</span>
+<span class="sd">        The persistent algorithm environment (parameters and variables)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;N-Skart step 3a&#39;</span><span class="p">)</span>
+    <span class="n">env</span><span class="p">[</span><span class="n">NSKART_NONSPACED_RANDOMNESS_TEST_KEY</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">von_neumann_ratio_test</span><span class="p">(</span>
+            <span class="n">data</span><span class="o">=</span><span class="n">env</span><span class="p">[</span><span class="s">&#39;Y_j(m)&#39;</span><span class="p">],</span>
+            <span class="n">alpha</span><span class="o">=</span><span class="n">env</span><span class="p">[</span><span class="n">NSKART_RANDOMNESS_TEST_SIGNIFICANCE_KEY</span><span class="p">]</span>
+        <span class="p">)</span>
+    <span class="p">)</span>
+    <span class="k">if</span> <span class="n">env</span><span class="p">[</span><span class="n">NSKART_NONSPACED_RANDOMNESS_TEST_KEY</span><span class="p">]:</span>
+        <span class="n">env</span><span class="p">[</span><span class="s">&quot;k&#39;&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">env</span><span class="p">[</span><span class="s">&#39;k&#39;</span><span class="p">]</span>
+
+    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+        <span class="s">&#39;Randomness test for nonspaced batch means {}ed&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+            <span class="s">&#39;pass&#39;</span> <span class="k">if</span> <span class="n">env</span><span class="p">[</span><span class="n">NSKART_NONSPACED_RANDOMNESS_TEST_KEY</span><span class="p">]</span>
+            <span class="k">else</span> <span class="s">&#39;fail&#39;</span>
+        <span class="p">)</span>
+    <span class="p">)</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;Post-step 3a environment: {}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">env</span><span class="p">))</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;Finish step 3a&#39;</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">env</span>
+
+
+<span class="k">def</span> <span class="nf">_step_3bd</span><span class="p">(</span><span class="n">env</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Perform step 3b/d of the N-Skart algorithm</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    env: dict</span>
+<span class="sd">        The persistent algorithm environment (parameters and variables)</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    env: dict</span>
+<span class="sd">        The persistent algorithm environment (parameters and variables)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;N-Skart step 3b/d&#39;</span><span class="p">)</span>
+
+    <span class="c"># add another ignored batch to each spacer</span>
+    <span class="n">env</span><span class="p">[</span><span class="s">&#39;d&#39;</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;Add another ignored batch to each spacer: d = {}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+        <span class="n">env</span><span class="p">[</span><span class="s">&#39;d&#39;</span><span class="p">]</span>
+    <span class="p">))</span>
+
+    <span class="c"># number of spaced batches</span>
+    <span class="n">env</span><span class="p">[</span><span class="s">&quot;k&#39;&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">floor</span><span class="p">(</span><span class="n">env</span><span class="p">[</span><span class="s">&#39;n&#39;</span><span class="p">]</span> <span class="o">/</span> <span class="p">(</span><span class="n">env</span><span class="p">[</span><span class="s">&#39;d&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">/</span> <span class="n">env</span><span class="p">[</span><span class="s">&#39;m&#39;</span><span class="p">])</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&quot;Number of spaced batches: k&#39; = {}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">env</span><span class="p">[</span><span class="s">&quot;k&#39;&quot;</span><span class="p">]))</span>
+
+    <span class="c"># compute spaced batch means</span>
+    <span class="n">env</span><span class="p">[</span><span class="s">&#39;Y_j(m,d)&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">env</span><span class="p">[</span><span class="s">&#39;Y_j(m)&#39;</span><span class="p">][</span><span class="n">env</span><span class="p">[</span><span class="s">&#39;d&#39;</span><span class="p">]::</span><span class="n">env</span><span class="p">[</span><span class="s">&#39;d&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span>
+
+    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;Post-step 3b/d environment: {}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">env</span><span class="p">))</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;Finish step 3b/d&#39;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">env</span>
+
+
+<span class="k">def</span> <span class="nf">_step_3c</span><span class="p">(</span><span class="n">env</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Perform step 3c of the N-Skart algorithm</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    env: dict</span>
+<span class="sd">        The persistent algorithm environment (parameters and variables)</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    env: dict</span>
+<span class="sd">        The persistent algorithm environment (parameters and variables)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;N-Skart step 3c&#39;</span><span class="p">)</span>
+    <span class="n">env</span><span class="p">[</span><span class="n">NSKART_SPACED_RANDOMNESS_TEST_KEY</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">von_neumann_ratio_test</span><span class="p">(</span>
+            <span class="n">data</span><span class="o">=</span><span class="n">env</span><span class="p">[</span><span class="s">&#39;Y_j(m,d)&#39;</span><span class="p">],</span>
+            <span class="n">alpha</span><span class="o">=</span><span class="n">env</span><span class="p">[</span><span class="n">NSKART_RANDOMNESS_TEST_SIGNIFICANCE_KEY</span><span class="p">]</span>
+        <span class="p">)</span>
+    <span class="p">)</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+        <span class="s">&#39;Randomness test for spaced batch means {}ed&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+            <span class="s">&#39;pass&#39;</span> <span class="k">if</span> <span class="n">env</span><span class="p">[</span><span class="n">NSKART_SPACED_RANDOMNESS_TEST_KEY</span><span class="p">]</span>
+            <span class="k">else</span> <span class="s">&#39;fail&#39;</span>
+        <span class="p">)</span>
+    <span class="p">)</span>
+
+    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;Post-step 3c environment: {}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">env</span><span class="p">))</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;Finish step 3c&#39;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">env</span>
+
+
+<span class="k">def</span> <span class="nf">_step_4</span><span class="p">(</span><span class="n">env</span><span class="p">,</span> <span class="n">continue_insufficient_data</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Perform step 4 of the N-Skart algorithm</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    env: dict</span>
+<span class="sd">        The persistent algorithm environment (parameters and variables)</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    env: dict</span>
+<span class="sd">        The persistent algorithm environment (parameters and variables)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;N-Skart step 4&#39;</span><span class="p">)</span>
+
+    <span class="c"># tentative new batch size</span>
+    <span class="n">new_m</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="n">math</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span> <span class="o">*</span> <span class="n">env</span><span class="p">[</span><span class="s">&#39;m&#39;</span><span class="p">])</span>
+
+    <span class="c"># tentative new total batch count</span>
+    <span class="n">new_k</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="mf">0.9</span> <span class="o">*</span> <span class="n">env</span><span class="p">[</span><span class="s">&#39;k&#39;</span><span class="p">])</span>
+
+    <span class="c"># tentative new processed sample size</span>
+    <span class="n">new_n</span> <span class="o">=</span> <span class="n">new_k</span> <span class="o">*</span> <span class="n">new_m</span>
+
+    <span class="k">if</span> <span class="n">new_n</span> <span class="o">&lt;=</span> <span class="n">env</span><span class="p">[</span><span class="s">&#39;N&#39;</span><span class="p">]:</span>
+        <span class="c"># update batch size</span>
+        <span class="n">env</span><span class="p">[</span><span class="s">&#39;m&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">new_m</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;Update batch size: m = {}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">env</span><span class="p">[</span><span class="s">&#39;m&#39;</span><span class="p">]))</span>
+
+        <span class="c"># update total batch count</span>
+        <span class="n">env</span><span class="p">[</span><span class="s">&#39;k&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">new_k</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;Update total batch count: k = {}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">env</span><span class="p">[</span><span class="s">&#39;k&#39;</span><span class="p">]))</span>
+
+        <span class="c"># update processed sample size</span>
+        <span class="n">env</span><span class="p">[</span><span class="s">&#39;n&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">new_n</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;Update processed sample size: n = {}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">env</span><span class="p">[</span><span class="s">&#39;n&#39;</span><span class="p">]))</span>
+
+        <span class="c"># reset batch counter</span>
+        <span class="n">env</span><span class="p">[</span><span class="s">&#39;d&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">env</span><span class="p">[</span><span class="s">&#39;d^*&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">10</span>
+
+        <span class="c"># increase test counter</span>
+        <span class="n">env</span><span class="p">[</span><span class="s">&#39;b&#39;</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+
+        <span class="c"># recalculate non-spaced batch means</span>
+        <span class="n">env</span><span class="p">[</span><span class="s">&#39;Y_j(m)&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">_compute_nonspaced_batch_means</span><span class="p">(</span><span class="n">env</span><span class="p">)</span>
+
+    <span class="k">else</span><span class="p">:</span>
+        <span class="c"># insufficient data: sample to processed larger than available data</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&quot;Insufficient data.&quot;</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&quot;New batch size: m = {}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">new_m</span><span class="p">))</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&quot;New total batch count: k = {}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">new_k</span><span class="p">))</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&quot;New processed sample size: n = {}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">new_n</span><span class="p">))</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&quot;Available data points: N = {}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">env</span><span class="p">[</span><span class="s">&#39;N&#39;</span><span class="p">]))</span>
+
+        <span class="n">error_msg</span> <span class="o">=</span> <span class="p">(</span><span class="s">&quot;N = {} data points available, need n = {}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+            <span class="n">env</span><span class="p">[</span><span class="s">&#39;N&#39;</span><span class="p">],</span> <span class="n">new_n</span>
+        <span class="p">))</span>
+
+        <span class="k">if</span> <span class="n">continue_insufficient_data</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="n">error_msg</span><span class="p">)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&quot;Insufficient data -- user request to continue&quot;</span><span class="p">)</span>
+            <span class="n">env</span><span class="p">[</span><span class="n">NSKART_INSUFFICIENT_DATA_KEY</span><span class="p">]</span> <span class="o">=</span> <span class="bp">True</span>
+
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">NSkartInsufficientDataError</span><span class="p">(</span><span class="n">error_msg</span><span class="p">)</span>
+
+    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;Post-step 4 environment: {}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">env</span><span class="p">))</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;Finish step 4&#39;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">env</span>
+
+
+<span class="k">def</span> <span class="nf">_step_5a</span><span class="p">(</span><span class="n">env</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Perform step 5a of the N-Skart algorithm</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    env: dict</span>
+<span class="sd">        The persistent algorithm environment (parameters and variables)</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    env: dict</span>
+<span class="sd">        The persistent algorithm environment (parameters and variables)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;N-Skart step 5a&#39;</span><span class="p">)</span>
+
+    <span class="c"># Skip first w observations in the warm-up periods</span>
+    <span class="n">env</span><span class="p">[</span><span class="s">&#39;w&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">env</span><span class="p">[</span><span class="s">&#39;d&#39;</span><span class="p">]</span> <span class="o">*</span> <span class="n">env</span><span class="p">[</span><span class="s">&#39;m&#39;</span><span class="p">]</span>
+
+    <span class="c"># Number of approximately steady-state observations is available to build a</span>
+    <span class="c"># confidence interval</span>
+    <span class="n">env</span><span class="p">[</span><span class="s">&quot;N&#39;&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">env</span><span class="p">[</span><span class="s">&#39;N&#39;</span><span class="p">]</span> <span class="o">-</span> <span class="n">env</span><span class="p">[</span><span class="s">&#39;w&#39;</span><span class="p">]</span>
+
+    <span class="c"># Reinflate batch count to compensate for the total number of times the</span>
+    <span class="c"># batch count was deflated in successive iterations of the randomness test.</span>
+    <span class="n">env</span><span class="p">[</span><span class="s">&#39;k&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span>
+        <span class="n">math</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="n">env</span><span class="p">[</span><span class="s">&quot;k&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">/</span> <span class="mf">0.9</span><span class="p">)</span> <span class="o">**</span> <span class="n">env</span><span class="p">[</span><span class="s">&#39;b&#39;</span><span class="p">]),</span>
+        <span class="n">env</span><span class="p">[</span><span class="s">&#39;k&#39;</span><span class="p">]</span>
+    <span class="p">)</span>
+
+    <span class="c"># compute a multiplier to use all available observations</span>
+    <span class="n">env</span><span class="p">[</span><span class="s">&#39;f&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">env</span><span class="p">[</span><span class="s">&quot;N&#39;&quot;</span><span class="p">]</span> <span class="o">/</span> <span class="n">env</span><span class="p">[</span><span class="s">&quot;k&#39;&quot;</span><span class="p">]</span> <span class="o">/</span> <span class="n">env</span><span class="p">[</span><span class="s">&#39;m&#39;</span><span class="p">])</span>
+
+    <span class="c"># update count of truncated, nonspaced batch means</span>
+    <span class="n">env</span><span class="p">[</span><span class="s">&quot;k&#39;&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">math</span><span class="o">.</span><span class="n">floor</span><span class="p">(</span><span class="n">env</span><span class="p">[</span><span class="s">&#39;f&#39;</span><span class="p">]</span> <span class="o">*</span> <span class="n">env</span><span class="p">[</span><span class="s">&quot;k&#39;&quot;</span><span class="p">]),</span> <span class="mi">1024</span><span class="p">)</span>
+
+    <span class="c"># update batch size</span>
+    <span class="n">env</span><span class="p">[</span><span class="s">&#39;m&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">floor</span><span class="p">(</span>
+        <span class="n">env</span><span class="p">[</span><span class="s">&#39;f&#39;</span><span class="p">]</span> <span class="o">*</span> <span class="n">env</span><span class="p">[</span><span class="s">&#39;m&#39;</span><span class="p">]</span> <span class="k">if</span> <span class="n">env</span><span class="p">[</span><span class="s">&quot;k&#39;&quot;</span><span class="p">]</span> <span class="o">&lt;</span> <span class="mi">1024</span>
+        <span class="k">else</span>
+        <span class="n">env</span><span class="p">[</span><span class="s">&quot;N&#39;&quot;</span><span class="p">]</span> <span class="o">/</span> <span class="mf">1024.0</span>
+    <span class="p">)</span>
+
+    <span class="c"># update length of warm-up period such that the initial w observations are</span>
+    <span class="c"># the only unused items in the overall data set of size N</span>
+    <span class="n">env</span><span class="p">[</span><span class="s">&#39;w&#39;</span><span class="p">]</span> <span class="o">+=</span> <span class="n">env</span><span class="p">[</span><span class="s">&quot;N&#39;&quot;</span><span class="p">]</span> <span class="o">-</span> <span class="n">env</span><span class="p">[</span><span class="s">&quot;k&#39;&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="n">env</span><span class="p">[</span><span class="s">&#39;m&#39;</span><span class="p">]</span>
+
+    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;Post-step 5a environment: {}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">env</span><span class="p">))</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;Finish step 5a&#39;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">env</span>
+
+
+<span class="k">def</span> <span class="nf">_step_5b</span><span class="p">(</span><span class="n">env</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Perform step 5b of the N-Skart algorithm</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    env: dict</span>
+<span class="sd">        The persistent algorithm environment (parameters and variables)</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    env: dict</span>
+<span class="sd">        The persistent algorithm environment (parameters and variables)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;N-Skart step 5b&#39;</span><span class="p">)</span>
+
+    <span class="c"># Recompute the truncated, nonspaced batch means so that there is no</span>
+    <span class="c"># partial batch left at the end of the overall data set of size N</span>
+    <span class="n">env</span><span class="p">[</span><span class="s">&#39;Y_j(m)&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">env</span><span class="p">[</span><span class="s">&#39;X_i&#39;</span><span class="p">]</span>
+        <span class="p">[</span><span class="n">env</span><span class="p">[</span><span class="s">&#39;w&#39;</span><span class="p">]:]</span>
+        <span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="n">env</span><span class="p">[</span><span class="s">&quot;k&#39;&quot;</span><span class="p">],</span> <span class="n">env</span><span class="p">[</span><span class="s">&#39;m&#39;</span><span class="p">]))</span>
+        <span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="p">)</span>
+
+    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;Post-step 5b environment: {}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">env</span><span class="p">))</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;Finish step 5b&#39;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">env</span>
+
+
+<span class="k">def</span> <span class="nf">_step_6</span><span class="p">(</span><span class="n">env</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Perform step 6 of the N-Skart algorithm</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    env: dict</span>
+<span class="sd">        The persistent algorithm environment (parameters and variables)</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    env: dict</span>
+<span class="sd">        The persistent algorithm environment (parameters and variables)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;N-Skart step 6&#39;</span><span class="p">)</span>
+
+    <span class="c"># compute the grand average of the current set of truncated, nonspaced</span>
+    <span class="c"># batch means</span>
+    <span class="n">env</span><span class="p">[</span><span class="n">NSKART_GRAND_AVERAGE_KEY</span><span class="p">]</span> <span class="o">=</span> <span class="n">env</span><span class="p">[</span><span class="s">&#39;Y_j(m)&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+
+    <span class="c"># compute the sample variance of the current set of truncated, nonspaced</span>
+    <span class="c"># batch means</span>
+    <span class="n">env</span><span class="p">[</span><span class="n">NSKART_SAMPLE_VAR_KEY</span><span class="p">]</span> <span class="o">=</span> <span class="n">env</span><span class="p">[</span><span class="s">&#39;Y_j(m)&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">var</span><span class="p">(</span><span class="n">ddof</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+    <span class="c"># compute the sample estimator of the lag-one correlation of the truncated,</span>
+    <span class="c"># nonspaced batch means</span>
+    <span class="n">env</span><span class="p">[</span><span class="n">NSKART_SAMPLE_LAG1_CORR</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="p">(</span>
+            <span class="p">(</span><span class="n">env</span><span class="p">[</span><span class="s">&#39;Y_j(m)&#39;</span><span class="p">][:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">env</span><span class="p">[</span><span class="n">NSKART_GRAND_AVERAGE_KEY</span><span class="p">])</span>
+            <span class="o">*</span> <span class="p">(</span><span class="n">env</span><span class="p">[</span><span class="s">&#39;Y_j(m)&#39;</span><span class="p">][</span><span class="mi">1</span><span class="p">:]</span> <span class="o">-</span> <span class="n">env</span><span class="p">[</span><span class="n">NSKART_GRAND_AVERAGE_KEY</span><span class="p">])</span>
+        <span class="p">)</span>
+        <span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+        <span class="o">/</span> <span class="n">env</span><span class="p">[</span><span class="n">NSKART_SAMPLE_VAR_KEY</span><span class="p">]</span>
+        <span class="o">/</span> <span class="p">(</span><span class="n">env</span><span class="p">[</span><span class="s">&quot;k&#39;&quot;</span><span class="p">]</span> <span class="o">-</span> <span class="mf">1.0</span><span class="p">)</span>
+    <span class="p">)</span>
+
+    <span class="n">env</span><span class="p">[</span><span class="s">&#39;A&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="p">(</span><span class="mf">1.</span> <span class="o">+</span> <span class="n">env</span><span class="p">[</span><span class="n">NSKART_SAMPLE_LAG1_CORR</span><span class="p">])</span>
+        <span class="o">/</span> <span class="p">(</span><span class="mf">1.</span> <span class="o">-</span> <span class="n">env</span><span class="p">[</span><span class="n">NSKART_SAMPLE_LAG1_CORR</span><span class="p">])</span>
+    <span class="p">)</span>
+
+    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;Post-step 6 environment: {}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">env</span><span class="p">))</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;Finish step 6&#39;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">env</span>
+
+
+<span class="k">def</span> <span class="nf">_step_7</span><span class="p">(</span><span class="n">env</span><span class="p">,</span> <span class="n">confidence_level</span><span class="o">=</span><span class="n">ONE_SIGMA</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Perform step 7 of the N-Skart algorithm</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    env: dict</span>
+<span class="sd">        The persistent algorithm environment (parameters and variables)</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    env: dict</span>
+<span class="sd">        The persistent algorithm environment (parameters and variables)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;N-Skart step 7&#39;</span><span class="p">)</span>
+
+    <span class="c"># compute spacer number such that spacer size is the smallest multiple of m</span>
+    <span class="c"># not less than the final size of the warm-up period</span>
+    <span class="n">env</span><span class="p">[</span><span class="s">&quot;d&#39;&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="n">env</span><span class="p">[</span><span class="s">&#39;w&#39;</span><span class="p">]</span> <span class="o">/</span> <span class="n">env</span><span class="p">[</span><span class="s">&#39;m&#39;</span><span class="p">])</span>
+
+    <span class="c"># number of spaced batches</span>
+    <span class="n">env</span><span class="p">[</span><span class="s">&quot;k&#39;&#39;&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">+</span> <span class="n">math</span><span class="o">.</span><span class="n">floor</span><span class="p">(</span>
+        <span class="p">(</span><span class="n">env</span><span class="p">[</span><span class="s">&quot;k&#39;&quot;</span><span class="p">]</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">env</span><span class="p">[</span><span class="s">&quot;d&#39;&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="p">)</span>
+
+    <span class="c"># compute spaced batch means</span>
+    <span class="c"># FIXME: BUG in paper</span>
+    <span class="c"># Sum needs to start at: N - (k&#39;&#39; - j) (d&#39; + 1) m - m + 1</span>
+    <span class="c"># Until: N - (k&#39;&#39; - j) (d&#39; + 1) m</span>
+    <span class="n">mask</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">env</span><span class="p">[</span><span class="s">&#39;N&#39;</span><span class="p">]</span> <span class="o">-</span> <span class="n">env</span><span class="p">[</span><span class="s">&#39;w&#39;</span><span class="p">])</span> <span class="o">//</span> <span class="n">env</span><span class="p">[</span><span class="s">&#39;m&#39;</span><span class="p">]</span> <span class="o">%</span> <span class="p">(</span><span class="n">env</span><span class="p">[</span><span class="s">&quot;d&#39;&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span>
+    <span class="p">)[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+
+    <span class="n">env</span><span class="p">[</span><span class="s">&quot;Y_j(m,d&#39;)&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">env</span><span class="p">[</span><span class="s">&#39;X_i&#39;</span><span class="p">]</span>
+        <span class="p">[</span><span class="n">env</span><span class="p">[</span><span class="s">&#39;w&#39;</span><span class="p">]:]</span>
+        <span class="p">[</span><span class="n">mask</span><span class="p">]</span>
+        <span class="o">.</span><span class="n">reshape</span><span class="p">(</span>
+            <span class="p">(</span><span class="n">env</span><span class="p">[</span><span class="s">&quot;k&#39;&#39;&quot;</span><span class="p">],</span> <span class="n">env</span><span class="p">[</span><span class="s">&#39;m&#39;</span><span class="p">])</span>
+        <span class="p">)</span>
+        <span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="p">)</span>
+
+    <span class="c"># compute grand mean</span>
+    <span class="n">env</span><span class="p">[</span><span class="n">NSKART_BATCHED_GRAND_MEAN_KEY</span><span class="p">]</span> <span class="o">=</span> <span class="n">env</span><span class="p">[</span><span class="s">&quot;Y_j(m,d&#39;)&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+
+    <span class="c"># compute sample variance</span>
+    <span class="n">env</span><span class="p">[</span><span class="n">NSKART_BATCHED_SAMPLE_VAR_KEY</span><span class="p">]</span> <span class="o">=</span> <span class="n">env</span><span class="p">[</span><span class="s">&quot;Y_j(m,d&#39;)&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">var</span><span class="p">(</span><span class="n">ddof</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+    <span class="c"># compute skewness</span>
+    <span class="n">env</span><span class="p">[</span><span class="n">NSKART_BATCHED_SKEW_KEY</span><span class="p">]</span> <span class="o">=</span> <span class="n">scipy</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">skew</span><span class="p">(</span>
+        <span class="n">env</span><span class="p">[</span><span class="s">&quot;Y_j(m,d&#39;)&quot;</span><span class="p">],</span> <span class="n">bias</span><span class="o">=</span><span class="bp">False</span>
+    <span class="p">)</span>
+
+    <span class="n">env</span><span class="p">[</span><span class="s">r&#39;\beta&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">env</span><span class="p">[</span><span class="n">NSKART_BATCHED_SKEW_KEY</span><span class="p">]</span> <span class="o">/</span> <span class="mi">6</span> <span class="o">/</span> <span class="n">math</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">env</span><span class="p">[</span><span class="s">&quot;k&#39;&#39;&quot;</span><span class="p">])</span>
+
+    <span class="k">def</span> <span class="nf">skewness_adjust</span><span class="p">(</span><span class="n">zeta</span><span class="p">):</span>
+        <span class="n">beta</span> <span class="o">=</span> <span class="n">env</span><span class="p">[</span><span class="s">r&#39;\beta&#39;</span><span class="p">]</span>
+        <span class="k">return</span> <span class="p">(</span>
+            <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">power</span><span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="mi">6</span> <span class="o">*</span> <span class="n">beta</span> <span class="o">*</span> <span class="p">(</span><span class="n">zeta</span> <span class="o">-</span> <span class="n">beta</span><span class="p">),</span> <span class="mi">1</span> <span class="o">/</span> <span class="mi">3</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span> <span class="o">/</span> <span class="n">beta</span>
+        <span class="p">)</span>
+
+    <span class="n">env</span><span class="p">[</span><span class="s">&#39;G(zeta)&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">skewness_adjust</span>
+    <span class="n">env</span><span class="p">[</span><span class="s">&#39;L, R&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span>
+        <span class="n">scipy</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">t</span><span class="p">(</span><span class="n">df</span><span class="o">=</span><span class="n">env</span><span class="p">[</span><span class="s">&quot;k&#39;&#39;&quot;</span><span class="p">]</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="o">.</span><span class="n">interval</span><span class="p">(</span><span class="n">confidence_level</span><span class="p">)</span>
+    <span class="p">)</span>
+    <span class="n">env</span><span class="p">[</span><span class="s">&#39;CI&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">env</span><span class="p">[</span><span class="n">NSKART_GRAND_AVERAGE_KEY</span><span class="p">]</span>
+        <span class="o">+</span>
+        <span class="n">env</span><span class="p">[</span><span class="s">&#39;G(zeta)&#39;</span><span class="p">](</span><span class="n">env</span><span class="p">[</span><span class="s">&#39;L, R&#39;</span><span class="p">])</span>
+        <span class="o">*</span> <span class="n">math</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">env</span><span class="p">[</span><span class="s">&#39;A&#39;</span><span class="p">]</span> <span class="o">*</span> <span class="n">env</span><span class="p">[</span><span class="n">NSKART_SAMPLE_VAR_KEY</span><span class="p">]</span> <span class="o">/</span> <span class="n">env</span><span class="p">[</span><span class="s">&quot;k&#39;&quot;</span><span class="p">])</span>
+    <span class="p">)</span>
+
+    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;Post-step 7 environment: {}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">env</span><span class="p">))</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;Finish step 7&#39;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">env</span>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../index.html">pysimoa</a></h1>
+
+
+
+
+
+<p>
+<iframe src="https://ghbtns.com/github-btn.html?user=andsor&repo=pysimoa&type=watch&count=true&size=large"
+  allowtransparency="true" frameborder="0" scrolling="0" width="200px" height="35px"></iframe>
+</p>
+
+
+<h3>Navigation</h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../about.html">About</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../setup.html">Setup</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../developer.html">Developer Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../reference.html">Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../zbib.html">Bibliography</a></li>
+</ul>
+
+
+<hr />
+<ul>
+    
+    <li class="toctree-l1"><a href="http://pypi.python.org/pypi/simoa">Package (PyPI)</a></li>
+    
+    <li class="toctree-l1"><a href="http://github.com/andsor/pysimoa">Source (GitHub)</a></li>
+    
+    <li class="toctree-l1"><a href="http://github.com/andsor/pysimoa/issues">Issues (GitHub)</a></li>
+    
+    <li class="toctree-l1"><a href="http://www.citeulike.org/group/19419">Bibliography (CiteULike)</a></li>
+    
+</ul>
+
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      
+      
+      
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.3.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.6</a>
+      
+    </div>
+
+    
+    <a href="https://github.com/andsor/pysimoa" class="github">
+        <img style="position: absolute; top: 0; right: 0; border: 0;" src="https://s3.amazonaws.com/github/ribbons/forkme_right_darkblue_121621.png" alt="Fork me on GitHub"  class="github"/>
+    </a>
+    
+
+    
+  </body>
+</html>

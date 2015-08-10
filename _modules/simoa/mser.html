@@ -1,0 +1,300 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>simoa.mser &mdash; pysimoa documentation</title>
+    
+    <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '0.4.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="author" title="About these documents" href="../../about.html" />
+    <link rel="top" title="pysimoa documentation" href="../../index.html" />
+    <link rel="up" title="Module code" href="../index.html" />
+   
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9">
+
+  </head>
+  <body role="document">  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for simoa.mser</h1><div class="highlight"><pre>
+<span class="c"># -*- coding: utf-8 -*-</span>
+
+<span class="sd">&#39;&#39;&#39;</span>
+
+<span class="sd">   Copyright 2015 The pysimoa Developers</span>
+
+<span class="sd">   Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);</span>
+<span class="sd">   you may not use this file except in compliance with the License.</span>
+<span class="sd">   You may obtain a copy of the License at</span>
+
+<span class="sd">       http://www.apache.org/licenses/LICENSE-2.0</span>
+
+<span class="sd">   Unless required by applicable law or agreed to in writing, software</span>
+<span class="sd">   distributed under the License is distributed on an &quot;AS IS&quot; BASIS,</span>
+<span class="sd">   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</span>
+<span class="sd">   See the License for the specific language governing permissions and</span>
+<span class="sd">   limitations under the License.</span>
+
+<span class="sd">&#39;&#39;&#39;</span>
+
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">division</span>
+
+<span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">import</span> <span class="nn">math</span>
+<span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">namedtuple</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">scipy.stats</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="n">__name__</span><span class="p">)</span>
+
+
+<span class="c"># check python 3</span>
+<span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="mi">3</span> <span class="o">/</span> <span class="mi">2</span> <span class="o">==</span> <span class="mf">1.5</span><span class="p">):</span>
+    <span class="k">raise</span> <span class="ne">RuntimeError</span>
+
+
+<span class="n">ONE_SIGMA</span> <span class="o">=</span> <span class="n">scipy</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">norm</span><span class="p">()</span><span class="o">.</span><span class="n">cdf</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="o">-</span> <span class="n">scipy</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">norm</span><span class="p">()</span><span class="o">.</span><span class="n">cdf</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+
+
+<span class="n">MSER5_TRUNCATED_MEAN_KEY</span> <span class="o">=</span> <span class="s">r&#39;\bar{Z}(k,d^*)&#39;</span>
+<span class="n">MSER5_TRUNCATED_VARIANCE_KEY</span> <span class="o">=</span> <span class="s">r&#39;S^2_Z(k,d)&#39;</span>
+<span class="n">MSER5_NEW_BATCH_MEANS_KEY</span> <span class="o">=</span> <span class="s">r&#39;\bar{Z}_l(m^*,d^*)&#39;</span>
+<span class="n">MSER5_NEW_BATCH_MEANS_VARIANCE_KEY</span> <span class="o">=</span> <span class="s">r&#39;S^2_{\bar{Z}}(k^*, m^*, d^*)&#39;</span>
+
+
+<div class="viewcode-block" id="MSERException"><a class="viewcode-back" href="../../_rst/simoa.html#simoa.mser.MSERException">[docs]</a><span class="k">class</span> <span class="nc">MSERException</span><span class="p">(</span><span class="ne">BaseException</span><span class="p">):</span>
+    <span class="k">pass</span>
+
+</div>
+<div class="viewcode-block" id="MSERInsufficientDataError"><a class="viewcode-back" href="../../_rst/simoa.html#simoa.mser.MSERInsufficientDataError">[docs]</a><span class="k">class</span> <span class="nc">MSERInsufficientDataError</span><span class="p">(</span><span class="n">MSERException</span><span class="p">,</span> <span class="ne">RuntimeError</span><span class="p">):</span>
+    <span class="k">pass</span>
+
+</div>
+<span class="n">MSERReturnValue</span> <span class="o">=</span> <span class="n">namedtuple</span><span class="p">(</span>
+    <span class="s">&#39;MSERReturnValue&#39;</span><span class="p">,</span>
+    <span class="p">[</span><span class="s">&#39;mean&#39;</span><span class="p">,</span> <span class="s">&#39;ci&#39;</span><span class="p">,</span> <span class="s">&#39;env&#39;</span><span class="p">]</span>
+<span class="p">)</span>
+
+
+<div class="viewcode-block" id="compute_mser5_interval"><a class="viewcode-back" href="../../_rst/simoa.html#simoa.mser.compute_mser5_interval">[docs]</a><span class="k">def</span> <span class="nf">compute_mser5_interval</span><span class="p">(</span>
+    <span class="n">data</span><span class="p">,</span> <span class="n">confidence_level</span><span class="o">=</span><span class="n">ONE_SIGMA</span><span class="p">,</span> <span class="n">continue_insufficient_data</span><span class="o">=</span><span class="bp">False</span>
+<span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Estimate the steady-state mean and the interval by the MSER-5 method</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    &quot;MSER-5 (Franklin and White 2008) is a modification of the Marginal</span>
+<span class="sd">    Confidence Rule (MCR) or the Marginal Standard Error Rule (MSER) proposed</span>
+<span class="sd">    by White (1997).&quot; [1]_</span>
+<span class="sd">    &quot;MSER-5 is a sequential procedure that uses the method of nonoverlapping</span>
+<span class="sd">    batch means (NBM) to deliver not only a data-truncation point (i.e., end of</span>
+<span class="sd">    the “warm-up period”) but also point and CI estimators [...] computed from</span>
+<span class="sd">    the truncated (“warmed-up”) sequence of batch means.&quot; [1]_</span>
+
+<span class="sd">    References</span>
+<span class="sd">    ----------</span>
+<span class="sd">    .. [1] Mokashi, A. C. et al. Performance comparison of MSER-5 and N-Skart</span>
+<span class="sd">       on the simulation start-up problem. In *Proceedings of the Winter</span>
+<span class="sd">       Simulation Conference*, 971-982 (2010).</span>
+<span class="sd">       http://www.ise.ncsu.edu/jwilson/files/mokashi10wsc.pdf</span>
+<span class="sd">    .. [2] Franklin, W. W. &amp; White, K. P. Stationarity tests and MSER-5:</span>
+<span class="sd">       Exploring the intuition behind mean-squared-error-reduction in</span>
+<span class="sd">       detecting and correcting initialization bias. In Winter Simulation</span>
+<span class="sd">       Conference, 541-546 (2008).</span>
+<span class="sd">       http://www.informs-sim.org/wsc08papers/064.pdf</span>
+<span class="sd">    .. [3] White, K. P. An effective truncation heuristic for bias reduction in</span>
+<span class="sd">       simulation output. Simulation 69, 323-334 (1997).</span>
+<span class="sd">       http://dx.doi.org/10.1177/003754979706900601</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">env</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+
+    <span class="n">env</span><span class="p">[</span><span class="s">r&#39;1 - \alpha&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">confidence_level</span>
+
+    <span class="n">env</span><span class="p">[</span><span class="s">&#39;X_i&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">data</span>
+
+    <span class="c"># number of data points</span>
+    <span class="n">env</span><span class="p">[</span><span class="s">&#39;N&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">env</span><span class="p">[</span><span class="s">&#39;X_i&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">size</span>
+
+    <span class="c"># batch size</span>
+    <span class="n">env</span><span class="p">[</span><span class="s">&#39;m&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">5</span>
+
+    <span class="c"># number of batches</span>
+    <span class="n">env</span><span class="p">[</span><span class="s">&#39;k&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">math</span><span class="o">.</span><span class="n">floor</span><span class="p">(</span><span class="n">env</span><span class="p">[</span><span class="s">&#39;N&#39;</span><span class="p">]</span> <span class="o">/</span> <span class="n">env</span><span class="p">[</span><span class="s">&#39;m&#39;</span><span class="p">]))</span>
+
+    <span class="c"># compute batch means</span>
+    <span class="n">env</span><span class="p">[</span><span class="s">&#39;Z_j&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">env</span><span class="p">[</span><span class="s">&#39;X_i&#39;</span><span class="p">]</span>
+        <span class="p">[:</span><span class="n">env</span><span class="p">[</span><span class="s">&#39;m&#39;</span><span class="p">]</span> <span class="o">*</span> <span class="n">env</span><span class="p">[</span><span class="s">&#39;k&#39;</span><span class="p">]]</span>
+        <span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">env</span><span class="p">[</span><span class="s">&#39;k&#39;</span><span class="p">],</span> <span class="n">env</span><span class="p">[</span><span class="s">&#39;m&#39;</span><span class="p">])</span>
+        <span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="p">)</span>
+
+    <span class="n">env</span><span class="p">[</span><span class="s">&#39;objective&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="n">env</span><span class="p">[</span><span class="s">&#39;k&#39;</span><span class="p">]</span> <span class="o">-</span> <span class="mi">5</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">env</span><span class="p">[</span><span class="s">&#39;k&#39;</span><span class="p">]</span> <span class="o">-</span> <span class="mi">5</span><span class="p">):</span>
+        <span class="c"># compute objective function</span>
+        <span class="n">env</span><span class="p">[</span><span class="s">&#39;objective&#39;</span><span class="p">][</span><span class="n">d</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">env</span><span class="p">[</span><span class="s">&#39;Z_j&#39;</span><span class="p">][</span><span class="n">d</span><span class="p">:</span><span class="n">env</span><span class="p">[</span><span class="s">&#39;k&#39;</span><span class="p">]]</span><span class="o">.</span><span class="n">var</span><span class="p">(</span><span class="n">ddof</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+            <span class="o">/</span> <span class="p">(</span><span class="n">env</span><span class="p">[</span><span class="s">&#39;k&#39;</span><span class="p">]</span> <span class="o">-</span> <span class="n">d</span><span class="p">)</span>
+        <span class="p">)</span>
+
+    <span class="c"># compute truncation point</span>
+    <span class="n">env</span><span class="p">[</span><span class="s">&#39;d^*&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">env</span><span class="p">[</span><span class="s">&#39;objective&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">argmin</span><span class="p">()</span>
+
+    <span class="k">if</span> <span class="n">env</span><span class="p">[</span><span class="s">&#39;d^*&#39;</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="n">math</span><span class="o">.</span><span class="n">floor</span><span class="p">(</span><span class="n">env</span><span class="p">[</span><span class="s">&#39;k&#39;</span><span class="p">]</span> <span class="o">/</span> <span class="mi">2</span><span class="p">):</span>
+        <span class="c"># insufficient data</span>
+        <span class="n">error_msg</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="s">&#39;Insufficient data: truncation point at {}, should be below {}&#39;</span>
+        <span class="p">)</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">env</span><span class="p">[</span><span class="s">&#39;d^*&#39;</span><span class="p">],</span> <span class="n">math</span><span class="o">.</span><span class="n">floor</span><span class="p">(</span><span class="n">env</span><span class="p">[</span><span class="s">&#39;k&#39;</span><span class="p">]</span> <span class="o">/</span> <span class="mi">2</span><span class="p">))</span>
+
+        <span class="k">if</span> <span class="n">continue_insufficient_data</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="n">error_msg</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">MSERInsufficientDataError</span><span class="p">(</span><span class="n">error_msg</span><span class="p">)</span>
+
+    <span class="c"># compute truncated mean</span>
+    <span class="n">env</span><span class="p">[</span><span class="n">MSER5_TRUNCATED_MEAN_KEY</span><span class="p">]</span> <span class="o">=</span> <span class="n">env</span><span class="p">[</span><span class="s">&#39;Z_j&#39;</span><span class="p">][</span><span class="n">env</span><span class="p">[</span><span class="s">&#39;d^*&#39;</span><span class="p">]:]</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+
+    <span class="c"># compute truncated sample variance</span>
+    <span class="n">env</span><span class="p">[</span><span class="n">MSER5_TRUNCATED_VARIANCE_KEY</span><span class="p">]</span> <span class="o">=</span> <span class="n">env</span><span class="p">[</span><span class="s">&#39;Z_j&#39;</span><span class="p">][</span><span class="n">env</span><span class="p">[</span><span class="s">&#39;d^*&#39;</span><span class="p">]:]</span><span class="o">.</span><span class="n">var</span><span class="p">(</span><span class="n">ddof</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    env[&#39;k^*&#39;] = 20</span>
+<span class="sd">    env[&#39;m^*&#39;] = int(math.floor((env[&#39;k&#39;] - env[&#39;d^*&#39;]) / env[&#39;k^*&#39;]))</span>
+
+<span class="sd">    # To compute a CI estimator, MSER-5 organizes the truncated sequence</span>
+<span class="sd">    # into 20 “new” batch means with batch size as suggested by White and</span>
+<span class="sd">    # Robinson (2009)</span>
+<span class="sd">    env[MSER5_NEW_BATCH_MEANS_KEY] = (</span>
+<span class="sd">        env[&#39;Z_j&#39;][</span>
+<span class="sd">            env[&#39;d^*&#39;]:</span>
+<span class="sd">            env[&#39;d^*&#39;] + env[&#39;k^*&#39;] * env[&#39;m^*&#39;]</span>
+<span class="sd">        ]</span>
+<span class="sd">        .reshape(env[&#39;k^*&#39;], env[&#39;m^*&#39;])</span>
+<span class="sd">        .mean(axis=1)</span>
+<span class="sd">    )</span>
+
+<span class="sd">    # compute sample variance of the new batch means</span>
+<span class="sd">    env[MSER5_NEW_BATCH_MEANS_VARIANCE_KEY] = (</span>
+<span class="sd">        env[MSER5_NEW_BATCH_MEANS_KEY].var(ddof=1)</span>
+<span class="sd">    )</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">critical_values</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span>
+        <span class="n">scipy</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">norm</span><span class="o">.</span><span class="n">interval</span><span class="p">(</span><span class="n">confidence_level</span><span class="p">)</span>
+    <span class="p">)</span>
+
+    <span class="n">env</span><span class="p">[</span><span class="s">&#39;CI&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">env</span><span class="p">[</span><span class="n">MSER5_TRUNCATED_MEAN_KEY</span><span class="p">]</span>
+        <span class="o">+</span> <span class="n">critical_values</span>
+        <span class="o">*</span> <span class="n">env</span><span class="p">[</span><span class="n">MSER5_TRUNCATED_VARIANCE_KEY</span><span class="p">]</span>
+        <span class="o">/</span> <span class="n">math</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">env</span><span class="p">[</span><span class="s">&#39;k&#39;</span><span class="p">]</span> <span class="o">-</span> <span class="n">env</span><span class="p">[</span><span class="s">&#39;d^*&#39;</span><span class="p">])</span>
+    <span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">MSERReturnValue</span><span class="p">(</span>
+        <span class="n">mean</span><span class="o">=</span><span class="n">env</span><span class="p">[</span><span class="n">MSER5_TRUNCATED_MEAN_KEY</span><span class="p">],</span>
+        <span class="n">ci</span><span class="o">=</span><span class="n">env</span><span class="p">[</span><span class="s">&#39;CI&#39;</span><span class="p">],</span>
+        <span class="n">env</span><span class="o">=</span><span class="n">env</span><span class="p">,</span>
+    <span class="p">)</span></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../index.html">pysimoa</a></h1>
+
+
+
+
+
+<p>
+<iframe src="https://ghbtns.com/github-btn.html?user=andsor&repo=pysimoa&type=watch&count=true&size=large"
+  allowtransparency="true" frameborder="0" scrolling="0" width="200px" height="35px"></iframe>
+</p>
+
+
+<h3>Navigation</h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../about.html">About</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../setup.html">Setup</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../developer.html">Developer Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../reference.html">Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../zbib.html">Bibliography</a></li>
+</ul>
+
+
+<hr />
+<ul>
+    
+    <li class="toctree-l1"><a href="http://pypi.python.org/pypi/simoa">Package (PyPI)</a></li>
+    
+    <li class="toctree-l1"><a href="http://github.com/andsor/pysimoa">Source (GitHub)</a></li>
+    
+    <li class="toctree-l1"><a href="http://github.com/andsor/pysimoa/issues">Issues (GitHub)</a></li>
+    
+    <li class="toctree-l1"><a href="http://www.citeulike.org/group/19419">Bibliography (CiteULike)</a></li>
+    
+</ul>
+
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      
+      
+      
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.3.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.6</a>
+      
+    </div>
+
+    
+    <a href="https://github.com/andsor/pysimoa" class="github">
+        <img style="position: absolute; top: 0; right: 0; border: 0;" src="https://s3.amazonaws.com/github/ribbons/forkme_right_darkblue_121621.png" alt="Fork me on GitHub"  class="github"/>
+    </a>
+    
+
+    
+  </body>
+</html>
