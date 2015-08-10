@@ -1,5 +1,5 @@
-About pyfssa
-============
+About pysimoa
+=============
 
 .. only:: latex
 
