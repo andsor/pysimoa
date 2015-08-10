@@ -1,3 +1,7 @@
+-r requirements-doc.txt
+-r requirements-test.txt
+-r requirements.txt
+doit
 ggcq
 ipdb
 ipython[notebook,nbconvert]
@@ -5,8 +9,5 @@ matplotlib
 memory_profiler
 numexpr
 pandas
+pre-commit
 psutil
-pytest
-pytest-capturelog
-pytest-cov
-pytest-mock

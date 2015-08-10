@@ -1,27 +1,18 @@
-=======
-pysimoa
-=======
+===================
+Welcome to pysimoa!
+===================
 
-This is the documentation of **pysimoa**, a Scientific Python package
-for Simulation Output Analysis. 
+.. only:: not latex
 
-* **Release**: |release|
-* **Date**: |today|
-* **Author**: Andreas Sorge <as@asorge.de>
-
-Contents
-========
+   .. include:: about-include.rst
 
 .. toctree::
    :maxdepth: 2
 
-   License <license>
-   Module Reference <_rst/modules>
-
-
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
+   About <about>
+   Setup <setup>
+   Tutorial <tutorial>
+   User Guide <user>
+   Developer Guide <developer>
+   reference
+   zbib

@@ -1,33 +1,10 @@
 # -*- coding: utf-8 -*-
 
-'''
-
-   Copyright 2015 The pysimoa Developers
-
-   Licensed under the Apache License, Version 2.0 (the "License");
-   you may not use this file except in compliance with the License.
-   You may obtain a copy of the License at
-
-       http://www.apache.org/licenses/LICENSE-2.0
-
-   Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an "AS IS" BASIS,
-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under the License.
-
-'''
-
 from __future__ import (absolute_import, division,
                         print_function, unicode_literals)
 from future.builtins import (ascii, bytes, chr, dict, filter, hex, input,
                              int, map, next, oct, open, pow, range, round,
                              str, super, zip)
-
-from ._version import get_versions
-
-__version__ = get_versions()['version']
-del get_versions
 
 from .nskart import (
     compute_nskart_interval,
@@ -41,3 +18,11 @@ from .mser import (
     MSERException,
     MSERInsufficientDataError,
 )
+
+
+import pkg_resources
+
+try:
+        __version__ = pkg_resources.get_distribution(__name__).version
+except:
+        __version__ = 'unknown'
